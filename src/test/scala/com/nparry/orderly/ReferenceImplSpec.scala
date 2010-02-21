@@ -35,12 +35,32 @@ package com.nparry.orderly
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 
+import java.io.File
+import java.net.URI
+
 class ReferenceImplSpec extends FlatSpec with ShouldMatchers {
 
   "This implementation" should "produce the same output as the RI for valid input" in {
+    locateOrderlyInput("referenceImpl/positive_cases") foreach { url =>
+      System.err.println(url.toString())
+    }
   }
 
   "This implementation" should "reject the same invalid input as the RI" in {
+    locateOrderlyInput("referenceImpl/negative_cases") foreach { url =>
+      System.err.println(url.toString())
+    }
   }
+
+  def locateOrderlyInput(s: String): Array[File] = {
+    val a = filesForUri(uriForResourceDir(s)) filter { f => f.getAbsolutePath().endsWith(".orderly") }
+    a.length match {
+      case 0 => throw new Exception("No test input found in " + s)
+      case _ => a
+    }
+  }
+
+  def filesForUri(uri: URI): Array[File] = new File(uri).listFiles()
+  def uriForResourceDir(s: String): URI = Thread.currentThread().getContextClassLoader().getResources(s).nextElement().toURI()
 }
 
