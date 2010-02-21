@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2010, Nathan Parry
- * All rights reserved.
+ *  Copyright (c) 2010, Nathan Parry
+ *  All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are
+ *  met:
  * 
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
@@ -35,11 +35,10 @@ package com.nparry.orderly
 import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.lexical._
-import scala.util.parsing.input.{Reader,StreamReader,CharArrayReader}
-import scala.util.parsing.json
+import scala.util.parsing.input.{Reader,CharArrayReader}
+
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.Implicits._
-import java.io.{InputStream, InputStreamReader}
 
 /**
  * An implementation of Orderly JSON (http://orderly-json.org/).
@@ -50,7 +49,6 @@ import java.io.{InputStream, InputStreamReader}
  * http://github.com/lloyd/orderly/blob/master/docs.md
  */
 object OrderlyParser extends JavaTokenParsers {
-  type Tokens = json.Lexer
 
   // Some helpers to shorten the code below
 
@@ -130,5 +128,15 @@ object OrderlyParser extends JavaTokenParsers {
     "null" ^^^ JNull |
     "true" ^^^ JBool(true) |
     "false" ^^^ JBool(false)
+
+
+  // Entry points
+
+  def parseOrderlyString(s: String) = parseOrderly(new CharArrayReader(s.toCharArray()))
+  def parseOrderly(input: Reader[Char]): JObject  =
+    phrase(orderlySchema)(input) match {
+      case Success(result, _) => result
+      case _ => throw new Exception("Invalid Orderly")
+    }
 }
 
