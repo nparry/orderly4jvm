@@ -136,7 +136,7 @@ object OrderlyParser extends JavaTokenParsers {
   def parseOrderly(input: Reader[Char]): JObject  =
     phrase(orderlySchema)(input) match {
       case Success(result, _) => result
-      case _ => throw new Exception("Invalid Orderly")
+      case _ => throw new InvalidOrderly()
     }
  
   /*
@@ -145,4 +145,9 @@ object OrderlyParser extends JavaTokenParsers {
    */
   def schemaAsString(s: String) = net.liftweb.json.Printer.pretty(render(parseOrderlyString(s)))
 }
+
+/**
+ * Signal invalid input
+ */
+class InvalidOrderly extends Exception { }
 
