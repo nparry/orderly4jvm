@@ -138,5 +138,11 @@ object OrderlyParser extends JavaTokenParsers {
       case Success(result, _) => result
       case _ => throw new Exception("Invalid Orderly")
     }
+ 
+  /*
+   * Orderly input to a pretty printed JSON schema output.
+   * Mostly useful for interactive testing
+   */
+  def schemaAsString(s: String) = net.liftweb.json.Printer.pretty(render(parseOrderlyString(s)))
 }
 
