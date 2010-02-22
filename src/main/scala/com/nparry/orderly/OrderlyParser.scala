@@ -54,15 +54,19 @@ object OrderlyParser extends JavaTokenParsers {
 
   def t(name: String) = f("type", name)
   def f(k: String, v: JValue) = JField(k, v)
+  def fl(k: String, v: JObject) = v.values.size match {
+    case 0 => List()
+    case _ => List(f(k, v))
+  }
+
   def l [A] (x: Option[List[A]]): List[A] = x getOrElse List()
   def asInt(s: String): JValue = JInt(s.toInt)
-  def asDub(s: String): JValue =
-    try {
-      asInt(s)
-    } catch {
-      case e:NumberFormatException => JDouble(s.toDouble)
-      case e:Exception => throw e
-    }
+  def asDub(s: String): JValue = try {
+    asInt(s)
+  } catch {
+    case e:NumberFormatException => JDouble(s.toDouble)
+    case e:Exception => throw e
+  }
 
   // The orderly grammar
 
@@ -92,7 +96,7 @@ object OrderlyParser extends JavaTokenParsers {
     ("array" ~> "[" ~> unnamedEntry <~ "]") ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ r => t("array") :: f("items", e) :: l(r) } |
     ("object" ~> "{" ~> namedEntries <~ "}") ~ opt(additionalMarker)  ^^
-      { case e ~ m => t("object") :: f("properties", e) :: l(m) } |
+      { case e ~ m => t("object") :: (fl("properties", e) ++ l(m)) } |
     ("union" ~> "{" ~> unnamedEntries <~ "}") ^^ { case e => List(f("type", e)) }
   def stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength")) ^^
     { case r => t("string") :: l(r) }
