@@ -126,10 +126,8 @@ object OrderlyParser extends JavaTokenParsers {
   def propertyName: Parser[JString] =
     ident ^^ { case s => JString(s) } |
     jsonStr
-  def perlRegex: Parser[List[JField]] = ("/" ~> jsonStr <~ "/") ^^
+  def perlRegex: Parser[List[JField]] = ("/" ~> regex("[^/]+".r) <~ "/") ^^
     { case r => List(f("pattern", r)) }
-  //def perlRegex: Parser[List[JField]] = ("/" ~> regex("[^/]".r) <~ "/") ^^
-  //  { case r => List(f("pattern", r)) }
 
 
   // Mini grammar to parse JSON
