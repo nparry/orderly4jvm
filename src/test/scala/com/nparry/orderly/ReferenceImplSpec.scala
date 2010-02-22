@@ -76,7 +76,7 @@ class ReferenceImplSpec extends FlatSpec with ShouldMatchers {
     }
   }
 
-  def jsonMatches(ourJson: JObject, riJson: JObject) = false
+  def jsonMatches(ourJson: JObject, riJson: JObject) = prettyPrintJSON(ourJson) == prettyPrintJSON(riJson)
 
   /**
    * Make sure we reject the same cases as the RI. However, we don't try

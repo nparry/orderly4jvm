@@ -59,17 +59,17 @@ object OrderlyParser extends JavaTokenParsers {
 
   // The orderly grammar
 
-  def orderlySchema: Parser[JObject] = unnamedEntry <~ ";"
-  def namedEntries: Parser[JObject]   = repsep(namedEntry, ";") ^^ (JObject(_))
-  def unnamedEntries: Parser[JArray] = repsep(unnamedEntry, ";") ^^ (JArray(_))
+  def orderlySchema: Parser[JObject] = unnamedEntry
+  def namedEntries: Parser[JObject]   = rep(namedEntry) ^^ (JObject(_))
+  def unnamedEntries: Parser[JArray] = rep(unnamedEntry) ^^ (JArray(_))
   def namedEntry: Parser[JField] =
-    (definitionPrefix ~ propertyName ~ definitionSuffix) ^^ 
+    ((definitionPrefix ~ propertyName ~ definitionSuffix) <~ ";") ^^ 
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) } |
-    (stringPrefix ~ propertyName ~ stringSuffix) ^^ 
+    ((stringPrefix ~ propertyName ~ stringSuffix) <~ ";") ^^ 
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) }
   def unnamedEntry: Parser[JObject] =
-    (definitionPrefix ~ definitionSuffix) ^^ { case p ~ s => JObject(p ++ s) } |
-    (stringPrefix ~ stringSuffix) ^^ { case p ~ s => JObject(p ++ s) }
+    ((definitionPrefix ~ definitionSuffix) <~ ";") ^^ { case p ~ s => JObject(p ++ s) } |
+    ((stringPrefix ~ stringSuffix) <~ ";") ^^ { case p ~ s => JObject(p ++ s) }
   def definitionPrefix: Parser[List[JField]] =
     "boolean" ^^^ (List(t("boolean"))) | 
     "null"    ^^^ (List(t("null"))) |
@@ -81,7 +81,7 @@ object OrderlyParser extends JavaTokenParsers {
     ("array" ~> "[" ~> unnamedEntry <~ "]") ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ r => t("array") :: f("items", e) :: l(r) } |
     ("object" ~> "{" ~> namedEntries <~ "}") ~ opt(additionalMarker)  ^^
-      { case e ~ m => t("object") :: f("properties", e) :: l(m) } 
+      { case e ~ m => t("object") :: f("properties", e) :: l(m) } |
     ("union" ~> "{" ~> unnamedEntries <~ "}") ^^ { case e => List(f("type", e)) }
   def stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength")) ^^
     { case r => t("string") :: l(r) }
@@ -136,7 +136,8 @@ object OrderlyParser extends JavaTokenParsers {
   def parse(input: Reader[Char]): JObject  =
     phrase(orderlySchema)(input) match {
       case Success(result, _) => result
-      case _ => throw new InvalidOrderly()
+      case Failure(msg, _) => throw new InvalidOrderly(msg)
+      case Error(msg, _) => throw new InvalidOrderly(msg)
     }
  
   /*
@@ -149,5 +150,5 @@ object OrderlyParser extends JavaTokenParsers {
 /**
  * Signal invalid input
  */
-class InvalidOrderly extends Exception { }
+class InvalidOrderly(msg: String) extends Exception(msg)
 
