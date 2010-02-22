@@ -85,16 +85,16 @@ object OrderlyParser extends JavaTokenParsers {
     "boolean" ^^^ (List(t("boolean"))) | 
     "null"    ^^^ (List(t("null"))) |
     "any"     ^^^ (List(t("any"))) |
-    ("integer" ~> opt(range("minimum", "maximum", asInt))) ^^ { r => t("integer") :: l(r) } |
-    ("number"  ~> opt(range("minimum", "maximum", asDub))) ^^ { r => t("number") :: l(r) } |
-    ("array" ~> "{" ~> unnamedEntries <~ "}") ~ opt(additionalMarker) ~ opt(range("minItems", "maxItems", asInt)) ^^
+    ("integer" ~> opt(range("minimum", "maximum"))) ^^ { r => t("integer") :: l(r) } |
+    ("number"  ~> opt(range("minimum", "maximum"))) ^^ { r => t("number") :: l(r) } |
+    ("array" ~> "{" ~> unnamedEntries <~ "}") ~ opt(additionalMarker) ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ m ~ r =>  t("array") :: f("items", e) :: (l(r) ++ l(m)) } |
-    ("array" ~> "[" ~> unnamedEntry <~ "]") ~ opt(range("minItems", "maxItems", asInt)) ^^
+    ("array" ~> "[" ~> unnamedEntry <~ "]") ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ r => t("array") :: f("items", e) :: l(r) } |
     ("object" ~> "{" ~> namedEntries <~ "}") ~ opt(additionalMarker)  ^^
       { case e ~ m => t("object") :: f("properties", e) :: l(m) } |
     ("union" ~> "{" ~> unnamedEntries <~ "}") ^^ { case e => List(f("type", e)) }
-  def stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength", asInt)) ^^
+  def stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength")) ^^
     { case r => t("string") :: l(r) }
   def stringSuffix: Parser[List[JField]] = opt(perlRegex) ~ definitionSuffix ^^
     { case r ~ s => l(r) ++ s }
@@ -111,32 +111,35 @@ object OrderlyParser extends JavaTokenParsers {
     { case a => List(f("enum", a)) }
   def defaultValue: Parser[List[JField]] = "=" ~> jsonValue ^^
     { case d => List(f("default", d)) }
-  def range(l:String, h:String, toV: String => JValue): Parser[List[JField]] =
-    ("{" ~> floatingPointNumber ~ "," ~ floatingPointNumber <~ "}") ^^
-      { case min ~ "," ~ max => List(f(l, toV(min)), f(h, toV(max))) } |
-    ("{" ~> floatingPointNumber <~ "," <~ "}")  ^^
-      { case min => List(f(l, toV(min))) } | 
-    ("{" ~> "," ~> floatingPointNumber <~ "}") ^^
-      { case max => List(f(h, toV(max))) } |
+  def range(l:String, h:String): Parser[List[JField]] =
+    ("{" ~> jsonNum ~ "," ~ jsonNum <~ "}") ^^
+      { case min ~ "," ~ max => List(f(l, min), f(h, max)) } |
+    ("{" ~> jsonNum <~ "," <~ "}")  ^^
+      { case min => List(f(l, min)) } | 
+    ("{" ~> "," ~> jsonNum <~ "}") ^^
+      { case max => List(f(h, max)) } |
     ("{" ~ "," ~ "}") ^^^ List()
   def propertyName: Parser[JString] =
-    ("\"" ~> stringLiteral <~ "\"") ^^ { JString(_) } |
-    stringLiteral ^^ { JString(_) } |
-    "[A-Za-z_-]+".r ^^ { JString(_) }
-  def perlRegex: Parser[List[JField]] = ("/" ~> "[^/]".r <~ "/") ^^
+    ident ^^ { case s => JString(s) } |
+    jsonStr
+  def perlRegex: Parser[List[JField]] = ("/" ~> jsonStr <~ "/") ^^
     { case r => List(f("pattern", r)) }
+  //def perlRegex: Parser[List[JField]] = ("/" ~> regex("[^/]".r) <~ "/") ^^
+  //  { case r => List(f("pattern", r)) }
 
 
   // Mini grammar to parse JSON
 
   def jsonObj: Parser[JObject] = "{" ~> repsep(jsonMember, ",") <~ "}" ^^ { JObject(_) }
-  def jsonMember = stringLiteral ~ ":" ~ jsonValue ^^ { case k ~ ":" ~ v => f(k, v) }
-  def jsonArray = "[" ~> repsep(jsonValue, ",") <~ "]" ^^ { JArray(_) }
+  def jsonMember = jsonStr ~ ":" ~ jsonValue ^^ { case k ~ ":" ~ v => f(k.values, v) }
+  def jsonArray = ("[" ~> repsep(jsonValue, ",") <~ "]") ^^ { JArray(_) }
+  def jsonStr = stringLiteral ^^ { case s => JString(s.substring(1, s.length() - 1)) }
+  def jsonNum = floatingPointNumber ^^ { case n => asDub(n) }
   def jsonValue: Parser[JValue] =
     jsonObj |
     jsonArray |
-    ("\"" ~> stringLiteral <~ "\"") ^^ { JString(_) } |
-    floatingPointNumber ^^ { x => JDouble(x.toDouble) } |
+    jsonStr |
+    jsonNum |
     "null" ^^^ JNull |
     "true" ^^^ JBool(true) |
     "false" ^^^ JBool(false)
@@ -144,7 +147,14 @@ object OrderlyParser extends JavaTokenParsers {
 
   // Entry points
 
+  /**
+   * Parse the given string and return a JObject of the resuling schema
+   */
   def parse(s: String): JObject = parse(new CharArrayReader(s.toCharArray()))
+
+  /**
+   * Parse the given reader and return a JObject of the resuling schema
+   */
   def parse(input: Reader[Char]): JObject  =
     try {
      phrase(orderlySchema)(input) match {
