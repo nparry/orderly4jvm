@@ -55,23 +55,32 @@ object OrderlyParser extends JavaTokenParsers {
   def t(name: String) = f("type", name)
   def f(k: String, v: JValue) = JField(k, v)
   def l [A] (x: Option[List[A]]): List[A] = x getOrElse List()
-  def asDub(s: String): JDouble = JDouble(s.toDouble)
-  def asInt(s: String): JInt = JInt(s.toInt)
-
+  def asInt(s: String): JValue = JInt(s.toInt)
+  def asDub(s: String): JValue =
+    try {
+      asInt(s)
+    } catch {
+      case e:NumberFormatException => JDouble(s.toDouble)
+      case e:Exception => throw e
+    }
 
   // The orderly grammar
 
-  def orderlySchema: Parser[JObject] = unnamedEntry
-  def namedEntries: Parser[JObject]   = rep(namedEntry) ^^ (JObject(_))
-  def unnamedEntries: Parser[JArray] = rep(unnamedEntry) ^^ (JArray(_))
+  def orderlySchema: Parser[JObject] = unnamedEntry <~ opt(";")
+  def namedEntries: Parser[JObject] =
+    (rep1sep(namedEntry, ";") <~ opt(";")) ^^ { case x => JObject(x) } |
+    success(JObject(List()))
+  def unnamedEntries: Parser[JArray] =
+    (rep1sep(unnamedEntry, ";") <~ opt(";")) ^^ { case x => JArray(x) } |
+    success(JArray(List()))
   def namedEntry: Parser[JField] =
-    ((definitionPrefix ~ propertyName ~ definitionSuffix) <~ ";") ^^ 
+    (definitionPrefix ~ propertyName ~ definitionSuffix) ^^ 
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) } |
-    ((stringPrefix ~ propertyName ~ stringSuffix) <~ ";") ^^ 
+    (stringPrefix ~ propertyName ~ stringSuffix) ^^ 
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) }
   def unnamedEntry: Parser[JObject] =
-    ((definitionPrefix ~ definitionSuffix) <~ ";") ^^ { case p ~ s => JObject(p ++ s) } |
-    ((stringPrefix ~ stringSuffix) <~ ";") ^^ { case p ~ s => JObject(p ++ s) }
+    (definitionPrefix ~ definitionSuffix) ^^ { case p ~ s => JObject(p ++ s) } |
+    (stringPrefix ~ stringSuffix) ^^ { case p ~ s => JObject(p ++ s) }
   def definitionPrefix: Parser[List[JField]] =
     "boolean" ^^^ (List(t("boolean"))) | 
     "null"    ^^^ (List(t("null"))) |
@@ -111,6 +120,7 @@ object OrderlyParser extends JavaTokenParsers {
       { case max => List(f(h, toV(max))) } |
     ("{" ~ "," ~ "}") ^^^ List()
   def propertyName: Parser[JString] =
+    ("\"" ~> stringLiteral <~ "\"") ^^ { JString(_) } |
     stringLiteral ^^ { JString(_) } |
     "[A-Za-z_-]+".r ^^ { JString(_) }
   def perlRegex: Parser[List[JField]] = ("/" ~> "[^/]".r <~ "/") ^^
