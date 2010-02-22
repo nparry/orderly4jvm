@@ -132,8 +132,8 @@ object OrderlyParser extends JavaTokenParsers {
 
   // Entry points
 
-  def parseOrderlyString(s: String) = parseOrderly(new CharArrayReader(s.toCharArray()))
-  def parseOrderly(input: Reader[Char]): JObject  =
+  def parse(s: String): JObject = parse(new CharArrayReader(s.toCharArray()))
+  def parse(input: Reader[Char]): JObject  =
     phrase(orderlySchema)(input) match {
       case Success(result, _) => result
       case _ => throw new InvalidOrderly()
@@ -143,7 +143,7 @@ object OrderlyParser extends JavaTokenParsers {
    * Orderly input to a pretty printed JSON schema output.
    * Mostly useful for interactive testing
    */
-  def schemaAsString(s: String) = net.liftweb.json.Printer.pretty(render(parseOrderlyString(s)))
+  def schemaAsString(s: String) = net.liftweb.json.Printer.pretty(render(parse(s)))
 }
 
 /**

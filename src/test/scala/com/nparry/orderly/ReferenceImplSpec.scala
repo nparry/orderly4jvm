@@ -36,7 +36,8 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 
 import net.liftweb.json.JsonAST._
-import scala.util.parsing.input.{Reader,StreamReader,CharArrayReader}
+import scala.util.parsing.input.{Reader, StreamReader}
+
 
 import java.io._
 import java.net.URI
@@ -44,10 +45,38 @@ import java.net.URI
 class ReferenceImplSpec extends FlatSpec with ShouldMatchers {
 
   "This implementation" should "produce the same output as the RI for valid input" in {
-    locateOrderlyInput("referenceImpl/positive_cases") foreach { file =>
-      //System.err.println(url.toString())
+    ((locateOrderlyInput("referenceImpl/positive_cases") map {
+      f=> (f, getExpectedOutput(f)) }).foldLeft(0) { (errorCount, files) =>
+        try {
+          val ourJson = parseFile(files._1)
+          val riJson = jsonFromFile(files._2)
+          jsonMatches(ourJson, riJson) match {
+            case true => errorCount
+            case false => {
+              System.err.println("\nInput: " + files._1)
+              System.err.println("Our JSON:")
+              System.err.println(prettyPrintJSON(ourJson))
+              System.err.println("\nRI JSON:")
+              System.err.println(prettyPrintJSON(riJson))
+              errorCount + 1
+            }
+          }
+        } catch {
+          case e:InvalidOrderly => {
+            System.err.println("\nInput: " + files._1)
+            System.err.println("Parsing failed!")
+            errorCount + 1
+          }
+          case e:Exception => throw e
+        }
+      }
+    ) match {
+      case 0 => true
+      case count => fail(count + " problems processing positive test cases")
     }
   }
+
+  def jsonMatches(ourJson: JObject, riJson: JObject) = false
 
   /**
    * Make sure we reject the same cases as the RI. However, we don't try
@@ -63,7 +92,11 @@ class ReferenceImplSpec extends FlatSpec with ShouldMatchers {
     }
   }
 
-  def parseFile(f: File): JObject = OrderlyParser.parseOrderly(fileToReader(f))
+  def parseFile(f: File): JObject = OrderlyParser.parse(fileToReader(f))
+  def jsonFromFile(f: File): JObject = net.liftweb.json.JsonParser.parse(new FileReader(f)) match {
+    case o @ JObject(_) => o
+    case _ => throw new Exception("Expected output " + f + " didn't contain an object")
+  }
 
   def locateOrderlyInput(s: String): Array[File] = {
     val a = filesForUri(uriForResourceDir(s)) filter { f => f.getAbsolutePath().endsWith(".orderly") }
@@ -73,9 +106,18 @@ class ReferenceImplSpec extends FlatSpec with ShouldMatchers {
     }
   }
 
-  def filesForUri(uri: URI): Array[File] = new File(uri).listFiles()
+  def getExpectedOutput(f: File): File = {
+    val expected = new File(f.getAbsolutePath.replace(".orderly", ".jsonschema"))
+    expected.exists() match {
+      case false => throw new Exception("Unable to find expected output for " + f)
+      case _ => expected
+    }
+  }
+
   def uriForResourceDir(s: String): URI = Thread.currentThread().getContextClassLoader().getResources(s).nextElement().toURI()
-  def fileToReader(f: File) = StreamReader(new FileReader(f))
+  def filesForUri(uri: URI): Array[File] = new File(uri).listFiles()
+  def fileToReader(f: File): Reader[Char] = StreamReader(new FileReader(f))
+
   def prettyPrintJSON(json: JValue): String = net.liftweb.json.Printer.pretty(render(json))
 }
 
