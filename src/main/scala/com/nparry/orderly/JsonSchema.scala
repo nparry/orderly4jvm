@@ -36,13 +36,22 @@ import net.liftweb.json.JsonAST._
 import net.liftweb.json.Implicits._
 
 /**
- * A problem detected by the validator
+ * A problem detected by the validator for the given input
  */
 case class Violation(path: List[String], message: String) { }
 
 /**
+ * Internal errors in our schema
+ */
+class SchemaProblem(msg: String) extends Exception(msg) { }
+
+/**
  * JSON schema validation, ported from the Dojo implementation.
  * This is woefully incomplete at the moment.
+ * 
+ * Some hacky bits...
+ * - Something typed as 'number' might be represented as a
+ *   JInt.  This makes the min/max check ugly for this case.
  */
 object JsonSchemaValidator {
 
@@ -72,7 +81,7 @@ object JsonSchemaValidator {
 
     def asObject(x: JValue) = x match {
       case o @ JObject(_) => o
-      case _ => throw new Exception("expected to get an object from the schema")
+      case _ => throw new SchemaProblem("expected to get an object from the schema")
     }
 
     // validate a value against a property definition
@@ -81,7 +90,7 @@ object JsonSchemaValidator {
 
       def ok(): List[Violation] = List()
       def violation(msg: String): List[Violation] = List(Violation(path, msg))
-      def schemaProblem(msg: String): Nothing = throw new Exception(msg)
+      def schemaProblem(msg: String): Nothing = throw new SchemaProblem(msg)
 
       // A bunch of helper functions
       // TODO: Find some better way to create these with less duplicated code
@@ -89,7 +98,7 @@ object JsonSchemaValidator {
       def value(name: String): JValue = (schema \ name) match {
         case JNothing => JNothing
         case JField(_, v) => v
-        case _ => throw new Exception("Unexpected result looking for value " + name)
+        case _ => throw new SchemaProblem("Unexpected result looking for value " + name)
       }
 
       def bool(name: String, dflt: Boolean): Boolean = {
@@ -111,7 +120,8 @@ object JsonSchemaValidator {
       def dub(name: String, dflt: Double): Double = {
         value(name) match {
           case JNothing => dflt
-          case JDouble(x) => x
+          case JDouble(d) => d
+          case JInt(i) => i.doubleValue()
           case _ => schemaProblem("expected a double named " + name)
         }
       }
@@ -134,22 +144,22 @@ object JsonSchemaValidator {
 
       // validate a value against a type definition
       def checkType(typeDfn: JValue, v: JValue): List[Violation] = {
-        def matchOrError[A](clazz: Class[A]): List[Violation] = {
-          if (v.getClass() ==  clazz) ok()
-          else violation(v.getClass() + " value found, but a " + clazz + " is required")
+        def matchOrError(classes: List[Class[_]]): List[Violation] = {
+          if (classes.contains(v.getClass())) ok()
+          else violation(v.getClass() + " value found, but one of " + classes + " is required")
         }
 
         typeDfn match {
           case JNothing => ok()
           case JString(s) => s match {
             case "any" => ok()
-            case "null" => matchOrError(JNull.getClass())
-            case "string" => matchOrError(classOf[JString])
-            case "object" => matchOrError(classOf[JObject])
-            case "array" => matchOrError(classOf[JArray])
-            case "boolean" => matchOrError(classOf[JBool])
-            case "number" => matchOrError(classOf[JDouble])
-            case "integer" => matchOrError(classOf[JInt])
+            case "null" => matchOrError(List(JNull.getClass()))
+            case "string" => matchOrError(List(classOf[JString]))
+            case "object" => matchOrError(List(classOf[JObject]))
+            case "array" => matchOrError(List(classOf[JArray]))
+            case "boolean" => matchOrError(List(classOf[JBool]))
+            case "number" => matchOrError(List(classOf[JDouble], classOf[JInt]))
+            case "integer" => matchOrError(List(classOf[JInt]))
           }
           case JArray(arr) => {
             var unionErrors = arr map { unionType => checkType(unionType, v) }
@@ -209,8 +219,8 @@ object JsonSchemaValidator {
               (if (BigInt(s.length) < int("minLength", s.length)) violation("string is too short") else ok()) ++
               (if (BigInt(s.length) > int("maxLength", s.length)) violation("string is too long") else ok())
             case JInt(i) =>
-              (if (i < int("minimum", i)) violation("less than minimum allowed value") else ok()) ++
-              (if (i > int("maximum", i)) violation("greater than maximum allowed value") else ok())
+              (if (i.doubleValue() < dub("minimum", i.doubleValue())) violation("less than minimum allowed value") else ok()) ++
+              (if (i.doubleValue() > dub("maximum", i.doubleValue())) violation("greater than maximum allowed value") else ok())
             case JDouble(d) =>
               (if (d < dub("minimum", d)) violation("less than minimum allowed value") else ok()) ++
               (if (d > dub("maximum", d)) violation("greater than maximum allowed value") else ok()) ++
@@ -232,7 +242,7 @@ object JsonSchemaValidator {
       def value(obj: JObject, name: String): JValue = (obj \ name) match {
         case JNothing => JNothing
         case JField(_, v) => v
-        case _ => throw new Exception("Unexpected result looking for value " + name)
+        case _ => throw new SchemaProblem("Unexpected result looking for value " + name)
       }
 
       def instanceHas(name: String): Boolean = {
@@ -266,9 +276,9 @@ object JsonSchemaValidator {
           case JArray(arr) =>
             arr flatMap { elem => elem match {
               case JString(s) => if (instanceHas(s)) ok() else violation("presence of " + fld.name + " requires " + s + " also be present")
-              case _ => throw new Exception("'requires' should only contain strings")
+              case _ => throw new SchemaProblem("'requires' should only contain strings")
             }}
-          case _ => throw new Exception("invalid value for 'requires'")
+          case _ => throw new SchemaProblem("invalid value for 'requires'")
         }
       })
 
