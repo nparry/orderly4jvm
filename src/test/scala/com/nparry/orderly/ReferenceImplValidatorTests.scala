@@ -48,7 +48,7 @@ class ReferenceImplValidatorTests extends FunSuite {
         val orderlyInput = pair._1
         val testCases = pair._2
         try {
-          val orderly = Orderly(orderlyInput)
+          val orderly = makeOrderly(orderlyInput)
           errorCount + testCases.foldLeft(0) { (failCount, testInput) =>
             try {
               val errors = orderly.validate(testInput)
@@ -102,6 +102,22 @@ class ReferenceImplValidatorTests extends FunSuite {
     }
   }
   */
+
+  def makeOrderly(f: File): Orderly = try {
+    Orderly(f)
+  } catch {
+    case e:InvalidOrderly => try { 
+      // Some of the test input is actually in json schema format
+      import net.liftweb.json.JsonAST.JObject
+      Json.parse(f) match {
+        case o @ JObject(_) => new Orderly(o)
+        case _ => throw e
+      }
+    } catch {
+      // If the fallback fails, throw the original exception
+      case _ => throw e
+    }
+  }
 
   def locateOrderlyInput(s: String): Array[File] = {
     val a = filesForUri(uriForResourceDir(s)) filter { f => f.getAbsolutePath().endsWith(".orderly") }

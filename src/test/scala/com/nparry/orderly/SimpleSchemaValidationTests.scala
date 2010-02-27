@@ -68,7 +68,10 @@ class SimpleSchemaValidationTests extends FunSuite with ShouldMatchers {
 
     o.validate(JDouble(34.3)).size should equal (0)
 
-    o.validate(JInt(30)).size should equal (1)
+    // We say an int is a number - this is probably
+    // the right thing to do
+    o.validate(JInt(30)).size should equal (0)
+
     o.validate(JString("foo")).size should equal (1)
     o.validate(JBool(true)).size should equal (1)
     o.validate(Json.parse("""{ "foo": "bar" }""")).size should equal(1)
