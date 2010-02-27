@@ -120,7 +120,7 @@ object OrderlyParser extends JavaTokenParsers {
     ("number"  ~> opt(range("minimum", "maximum"))) ^^ { r => t("number") :: l(r) } |
     ("array" ~> "{" ~> unnamedEntries <~ "}") ~ opt(additionalMarker) ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ m ~ r =>  t("array") :: f("items", e) :: (l(r) ++ l(m)) } |
-    ("array" ~> "[" ~> unnamedEntry <~ "]") ~ opt(range("minItems", "maxItems")) ^^
+    ("array" ~> "[" ~> unnamedEntry <~ opt(";") <~ "]") ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ r => t("array") :: f("items", e) :: l(r) } |
     ("object" ~> "{" ~> namedEntries <~ "}") ~ opt(additionalMarker)  ^^
       { case e ~ m => t("object") :: (fl("properties", e) ++ l(m)) } |
