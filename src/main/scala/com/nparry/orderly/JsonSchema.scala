@@ -134,10 +134,10 @@ object JsonSchemaValidator {
         }
       }
 
-      def arr(name: String, f: JArray => List[Violation]): Option[List[Violation]] = {
+      def arr(name: String, f: List[JValue] => List[Violation]): Option[List[Violation]] = {
         value(name) match {
           case JNothing => None
-          case a @ JArray(_) => Some(f(a))
+          case a @ JArray(arr) => Some(f(arr))
           case _ => schemaProblem("expected an array named '" + name + "'")
         }
       }
@@ -201,7 +201,7 @@ object JsonSchemaValidator {
         case _ =>
           checkType(value("type"), instance) ++
           (obj("disallow", { d => if (checkType(d, instance).isEmpty) violation("disallowed value was matched") else ok() }) getOrElse ok()) ++
-          (arr("enum", { a => if ((a find { el: JValue => el == instance }) == JNothing) violation("does not match any enum value") else ok() }) getOrElse ok()) ++
+          (arr("enum", { a => if (!a.contains(instance)) violation("does not match any enum value") else ok() }) getOrElse ok()) ++
           (instance match {
             case JArray(arr) =>
               (value("items") match {
