@@ -62,7 +62,10 @@ object Json {
   }
 
   private def applyGiantHack(s: String): JValue = {
-    parseString("[" + munge(s) + "]")(0)
+    parseString("[" + munge(s) + "]") match {
+      case JArray(arr) => if (arr.isEmpty) JNothing else arr(0)
+      case _ => throw new Exception("Giant hack failed")
+    }
   }
 
   private def munge(s: String): String = {

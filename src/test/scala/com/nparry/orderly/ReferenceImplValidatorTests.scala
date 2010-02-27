@@ -43,8 +43,46 @@ import java.net.URI
 class ReferenceImplValidatorTests extends FunSuite {
 
   test("our validator passes the same JSON as the RI") {
+    processTests("pass", { (errors, orderlyInput, orderly, testInput) =>
+      errors.isEmpty match {
+        case true => 0
+        case false => {
+          System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
+          System.err.println(orderly.toString())
+          System.err.println("Input failed to validate: " + testInput + ", json is:")
+          System.err.println(Json.prettyPrint(testInput))
+          System.err.println("Validation errors are:")
+          System.err.println(errors)
+          1
+        }
+      }
+    }) match {
+      case 0 => true
+      case count => fail(count + " problems processing test cases that should validate")
+    }
+  }
+
+  test("our validator rejects the same JSON as the RI") {
+    processTests("fail", { (errors, orderlyInput, orderly, testInput) =>
+      errors.isEmpty match {
+        case false => 0
+        case true => {
+          System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
+          System.err.println(orderly.toString())
+          System.err.println("Input should have failed validation but did not: " + testInput + ", json is:")
+          System.err.println(Json.prettyPrint(testInput))
+          1
+        }
+      }
+    }) match {
+      case 0 => true
+      case count => fail(count + " problems processing test cases that should fail to validate")
+    }
+  }
+
+  def processTests(testName: String, processor: (List[Violation], File, Orderly, File) => int): Int = {
     ((locateOrderlyInput("referenceImplValidator") map {
-      f=> (f, getValidatorInputs(f, "pass")) }).foldLeft(0) { (errorCount, pair) =>
+      f=> (f, getValidatorInputs(f, testName)) }).foldLeft(0) { (errorCount, pair) =>
         val orderlyInput = pair._1
         val testCases = pair._2
         try {
@@ -52,18 +90,7 @@ class ReferenceImplValidatorTests extends FunSuite {
           errorCount + testCases.foldLeft(0) { (failCount, testInput) =>
             try {
               val errors = orderly.validate(testInput)
-              errors.isEmpty match {
-                case true => failCount
-                case false => {
-                  System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
-                  System.err.println(orderly.toString())
-                  System.err.println("Input failed to validate " + testInput + ", json is:")
-                  System.err.println(Json.prettyPrint(testInput))
-                  System.err.println("Validation errors are:")
-                  System.err.println(errors)
-                  failCount + 1
-                }
-              }
+              failCount + processor(errors, orderlyInput, orderly, testInput)
             } catch {
               case e:SchemaProblem => {
                 System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
@@ -73,35 +100,23 @@ class ReferenceImplValidatorTests extends FunSuite {
                 System.err.println("Errors is: " + e)
                 failCount + 1
               }
-              case e:Exception => throw e
+              case e:Exception => {
+                System.err.println("Fatal exception processing " + testInput)
+                throw e
+              }
             }
           }
         } catch {
           case e:InvalidOrderly => {
             System.err.println("\nOrderly from: " + orderlyInput)
             System.err.println("Parsing failed!")
-            errorCount + 1
+            errorCount + testCases.size
           }
           case e:Exception => throw e
         }
       }
-    ) match {
-      case 0 => true
-      case count => fail(count + " problems validating test cases that should validate")
-    }
+    ) 
   }
-
-  /**
-  test("we reject the same invalid input as the RI") {
-    locateOrderlyInput("referenceImpl/negative_cases") foreach { file =>
-      intercept[InvalidOrderly] {
-        val json = parseFile(file)
-        System.err.println("Successfully parsed " + file + ", this is bad! Parse result was:")
-        System.err.println(prettyPrintJSON(json))
-      }
-    }
-  }
-  */
 
   def makeOrderly(f: File): Orderly = try {
     Orderly(f)
