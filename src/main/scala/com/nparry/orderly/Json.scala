@@ -40,16 +40,48 @@ import java.io._
  */
 object Json {
 
-  def parse(f: File): JValue = parse(new FileReader(f))
-  def parse(s: String): JValue = parse(new StringReader(s))
-  def parse(r: Reader): JValue = try {
-    net.liftweb.json.JsonParser.parse(r)
-  } finally {
-    r.close()
-  }
-
   def prettyPrint(f: File): String = prettyPrint(parse(f))
   def prettyPrint(s: String): String = prettyPrint(parse(s))
   def prettyPrint(json: JValue): String = net.liftweb.json.Printer.pretty(render(json))
+
+  def parse(f: File): JValue = parse(new FileReader(f))
+  def parse(r: Reader): JValue = try { parse(readerToString(r)) } finally { r.close() }
+
+  def parse(s: String): JValue = {
+    var t = s.trim()
+    if (isGiantHackNecessary(t)) applyGiantHack(t)
+    else parseString(t)
+  }
+
+  private def parseString(s: String): JValue = {
+    net.liftweb.json.JsonParser.parse(munge(s))
+  }
+
+  private def isGiantHackNecessary(s: String): Boolean = {
+    !(s.startsWith("{") || s.startsWith("["))
+  }
+
+  private def applyGiantHack(s: String): JValue = {
+    parseString("[" + munge(s) + "]")(0)
+  }
+
+  private def munge(s: String): String = {
+    if (s.endsWith(";")) s.substring(0, s.length() - 1) else s
+  }
+
+  private def readerToString(r: Reader): String = {
+    val sb = new StringBuilder()
+    val buf = new BufferedReader(r)
+    var done = false
+
+    while (!done) {
+      done = buf.readLine() match {
+        case null => true
+        case s => { sb.append(s).append("\n"); false }
+      }
+    }
+
+    sb.toString()
+  }
 }
 
