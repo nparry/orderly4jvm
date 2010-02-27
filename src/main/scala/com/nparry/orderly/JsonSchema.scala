@@ -76,7 +76,7 @@ object JsonSchemaValidator {
     }
 
     // validate a value against a property definition
-    def checkProp(value: JValue, schema: JObject, incomingPath: List[String], i: String): List[Violation] = {
+    def checkProp(instance: JValue, schema: JObject, incomingPath: List[String], i: String): List[Violation] = {
       val path = i :: incomingPath
 
       def ok(): List[Violation] = List()
@@ -93,7 +93,7 @@ object JsonSchemaValidator {
       }
 
       def bool(name: String, dflt: Boolean): Boolean = {
-        schema \ name match {
+        value(name) match {
           case JNothing => dflt
           case JBool(b) => b
           case _ => schemaProblem("expected a boolean named " + name)
@@ -101,7 +101,7 @@ object JsonSchemaValidator {
       }
 
       def int(name: String, dflt: BigInt): BigInt = {
-        schema \ name match {
+        value(name) match {
           case JNothing => dflt
           case JInt(x) => x
           case _ => schemaProblem("expected an integer named " + name)
@@ -109,7 +109,7 @@ object JsonSchemaValidator {
       }
 
       def dub(name: String, dflt: Double): Double = {
-        schema \ name match {
+        value(name) match {
           case JNothing => dflt
           case JDouble(x) => x
           case _ => schemaProblem("expected a double named " + name)
@@ -117,7 +117,7 @@ object JsonSchemaValidator {
       }
 
       def obj(name: String, f: JObject => List[Violation]): Option[List[Violation]] = {
-        schema \ name match {
+        value(name) match {
           case JNothing => None
           case o @ JObject(_) => Some(f(o))
           case _ => schemaProblem("expected an object named '" + name + "'")
@@ -125,7 +125,7 @@ object JsonSchemaValidator {
       }
 
       def arr(name: String, f: JArray => List[Violation]): Option[List[Violation]] = {
-        schema \ name match {
+        value(name) match {
           case JNothing => None
           case a @ JArray(_) => Some(f(a))
           case _ => schemaProblem("expected an array named '" + name + "'")
@@ -229,6 +229,12 @@ object JsonSchemaValidator {
       def ok(): List[Violation] = List()
       def violation(msg: String): List[Violation] = List(Violation(path, msg))
 
+      def value(obj: JObject, name: String): JValue = (obj \ name) match {
+        case JNothing => JNothing
+        case JField(_, v) => v
+        case _ => throw new Exception("Unexpected result looking for value " + name)
+      }
+
       def instanceHas(name: String): Boolean = {
         instance \ name match {
           case JNothing => false
@@ -242,7 +248,7 @@ object JsonSchemaValidator {
       }
 
       (fieldsFor(objTypeDef) flatMap { fld: JField =>
-        checkProp(instance \ fld.name, asObject(fld.value), path, fld.name)
+        checkProp(value(instance, fld.name), asObject(fld.value), path, fld.name)
       }) ++
       (if (additionalProp) ok()
         else fieldsFor(instance) flatMap { fld: JField =>

@@ -42,8 +42,70 @@ class SimpleSchemaValidationTests extends FunSuite with ShouldMatchers {
 
   test("integer validation works") {
     val o = Orderly("integer;")
+
     o.validate(JInt(30)).size should equal (0)
 
+    o.validate(JString("foo")).size should equal (1)
+    o.validate(JDouble(34.3)).size should equal (1)
+    o.validate(JBool(true)).size should equal (1)
+    o.validate(parse("""{ "foo": "bar" }""")).size should equal(1)
+    o.validate(parse("""[ "foo", "bar" ]""")).size should equal(1)
+  }
+
+  test("string validation works") {
+    val o = Orderly("string;")
+
+    o.validate(JString("foo")).size should equal (0)
+
+    o.validate(JInt(30)).size should equal (1)
+    o.validate(JDouble(34.3)).size should equal (1)
+    o.validate(JBool(true)).size should equal (1)
+    o.validate(parse("""{ "foo": "bar" }""")).size should equal(1)
+    o.validate(parse("""[ "foo", "bar" ]""")).size should equal(1)
+  }
+
+  test("number validation works") {
+    val o = Orderly("number;")
+
+    o.validate(JDouble(34.3)).size should equal (0)
+
+    o.validate(JInt(30)).size should equal (1)
+    o.validate(JString("foo")).size should equal (1)
+    o.validate(JBool(true)).size should equal (1)
+    o.validate(parse("""{ "foo": "bar" }""")).size should equal(1)
+    o.validate(parse("""[ "foo", "bar" ]""")).size should equal(1)
+  }
+
+  test("boolean validation works") {
+    val o = Orderly("boolean;")
+
+    o.validate(JBool(true)).size should equal (0)
+
+    o.validate(JInt(30)).size should equal (1)
+    o.validate(JString("foo")).size should equal (1)
+    o.validate(JDouble(34.3)).size should equal (1)
+    o.validate(parse("""{ "foo": "bar" }""")).size should equal(1)
+    o.validate(parse("""[ "foo", "bar" ]""")).size should equal(1)
+  }
+
+  test("object validation works") {
+    val o = Orderly("object { string foo; };")
+    
+    o.validate(parse("""{ "foo": "bar" }""")).size should equal(0)
+
+    o.validate(JInt(30)).size should equal (1)
+    o.validate(JString("foo")).size should equal (1)
+    o.validate(JDouble(34.3)).size should equal (1)
+    o.validate(JBool(true)).size should equal (1)
+    o.validate(parse("""[ "foo", "bar" ]""")).size should equal(1)
+  }
+
+  test("array validation works") {
+    val o = Orderly("""array [ string ];""")
+    
+    o.validate(parse("""[ "foo", "bar" ]""")).size should equal(0)
+
+    o.validate(JInt(30)).size should equal (1)
     o.validate(JString("foo")).size should equal (1)
     o.validate(JDouble(34.3)).size should equal (1)
     o.validate(JBool(true)).size should equal (1)
