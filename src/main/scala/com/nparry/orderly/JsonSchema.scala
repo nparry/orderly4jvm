@@ -126,6 +126,14 @@ object JsonSchemaValidator {
         }
       }
 
+      def str(name: String, dflt: String): String = {
+        value(name) match {
+          case JNothing => dflt
+          case JString(s) => s
+          case _ => schemaProblem("expected a string named " + name)
+        }
+      }
+
       def obj(name: String, f: JObject => List[Violation]): Option[List[Violation]] = {
         value(name) match {
           case JNothing => None
@@ -215,19 +223,19 @@ object JsonSchemaValidator {
             case o @ JObject(_) =>
               (obj("properties", { props => checkObj(o, props, path, bool("additionalProperties", false)) }) getOrElse ok())
             case JString(s) =>
-              // TODO: check regex match if specified
-              (if (BigInt(s.length) < int("minLength", s.length)) violation("string is too short") else ok()) ++
-              (if (BigInt(s.length) > int("maxLength", s.length)) violation("string is too long") else ok())
+              (if (s.matches(str("pattern", ".*"))) ok() else violation(s + " does not match " + str("pattern", ".*"))) ++
+              (if (BigInt(s.length) < int("minLength", s.length)) violation(s + " is too short") else ok()) ++
+              (if (BigInt(s.length) > int("maxLength", s.length)) violation(s + " is too long") else ok())
             case JInt(i) =>
-              (if (i.doubleValue() < dub("minimum", i.doubleValue())) violation("less than minimum allowed value") else ok()) ++
-              (if (i.doubleValue() > dub("maximum", i.doubleValue())) violation("greater than maximum allowed value") else ok())
+              (if (i.doubleValue() < dub("minimum", i.doubleValue())) violation(i + " is less than minimum allowed value") else ok()) ++
+              (if (i.doubleValue() > dub("maximum", i.doubleValue())) violation(i + " is greater than maximum allowed value") else ok())
             case JDouble(d) =>
-              (if (d < dub("minimum", d)) violation("less than minimum allowed value") else ok()) ++
-              (if (d > dub("maximum", d)) violation("greater than maximum allowed value") else ok()) ++
+              (if (d < dub("minimum", d)) violation(d + " is less than minimum allowed value") else ok()) ++
+              (if (d > dub("maximum", d)) violation(d + " is greater than maximum allowed value") else ok()) ++
               (if ((int("maxDecimal", -1) > -1) &&
                    (d.toString.indexOf(".") != -1) &&
                    (int("maxDecimal", -1) < d.toString.substring(d.toString.indexOf(".")).length))
-                  violation("too many decimal places") else ok())
+                  violation(d + " has too many decimal places") else ok())
             case _ => ok()
           })
       })
