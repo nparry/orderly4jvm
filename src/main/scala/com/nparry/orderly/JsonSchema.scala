@@ -42,6 +42,7 @@ case class Violation(path: List[String], message: String) { }
 
 /**
  * JSON schema validation, ported from the Dojo implementation.
+ * This is woefully incomplete at the moment.
  */
 object JsonSchemaValidator {
 
@@ -85,7 +86,11 @@ object JsonSchemaValidator {
       // A bunch of helper functions
       // TODO: Find some better way to create these with less duplicated code
 
-      def value(name: String): JValue = schema \ name
+      def value(name: String): JValue = (schema \ name) match {
+        case JNothing => JNothing
+        case JField(_, v) => v
+        case _ => throw new Exception("Unexpected result looking for value " + name)
+      }
 
       def bool(name: String, dflt: Boolean): Boolean = {
         schema \ name match {
@@ -287,5 +292,5 @@ object JsonSchemaValidator {
       })
     })
   }
-};
+}
 
