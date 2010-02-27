@@ -34,29 +34,30 @@ package com.nparry.orderly
 
 import org.scalatest.FunSuite
 
-import net.liftweb.json.JsonAST._
-import scala.util.parsing.input.{Reader, StreamReader}
-
+import net.liftweb.json.JsonAST.JValue
 
 import java.io._
 import java.net.URI
 
+/**
+ * Make sure our parser produces the same result as the RI.
+ */
 class ReferenceImplTests extends FunSuite {
 
   test("we produce the same output as the RI for valid input") {
     ((locateOrderlyInput("referenceImpl/positive_cases") map {
       f=> (f, getExpectedOutput(f)) }).foldLeft(0) { (errorCount, files) =>
         try {
-          val ourJson = parseFile(files._1)
-          val riJson = jsonFromFile(files._2)
+          val ourJson = OrderlyParser.parse(files._1)
+          val riJson = Json.parse(files._2)
           jsonMatches(ourJson, riJson) match {
             case true => errorCount
             case false => {
               System.err.println("\nInput: " + files._1)
               System.err.println("Our JSON:")
-              System.err.println(prettyPrintJSON(ourJson))
+              System.err.println(Json.prettyPrint(ourJson))
               System.err.println("\nRI JSON:")
-              System.err.println(prettyPrintJSON(riJson))
+              System.err.println(Json.prettyPrint(riJson))
               errorCount + 1
             }
           }
@@ -75,7 +76,7 @@ class ReferenceImplTests extends FunSuite {
     }
   }
 
-  def jsonMatches(ourJson: JObject, riJson: JObject) = prettyPrintJSON(ourJson) == prettyPrintJSON(riJson)
+  def jsonMatches(ourJson: JValue, riJson: JValue) = Json.prettyPrint(ourJson) == Json.prettyPrint(riJson)
 
   /**
    * Make sure we reject the same cases as the RI. However, we don't try
@@ -84,17 +85,11 @@ class ReferenceImplTests extends FunSuite {
   test("we reject the same invalid input as the RI") {
     locateOrderlyInput("referenceImpl/negative_cases") foreach { file =>
       intercept[InvalidOrderly] {
-        val json = parseFile(file)
+        val json = OrderlyParser.parse(file)
         System.err.println("Successfully parsed " + file + ", this is bad! Parse result was:")
-        System.err.println(prettyPrintJSON(json))
+        System.err.println(Json.prettyPrint(json))
       }
     }
-  }
-
-  def parseFile(f: File): JObject = OrderlyParser.parse(fileToReader(f))
-  def jsonFromFile(f: File): JObject = net.liftweb.json.JsonParser.parse(new FileReader(f)) match {
-    case o @ JObject(_) => o
-    case _ => throw new Exception("Expected output " + f + " didn't contain an object")
   }
 
   def locateOrderlyInput(s: String): Array[File] = {
@@ -115,8 +110,5 @@ class ReferenceImplTests extends FunSuite {
 
   def uriForResourceDir(s: String): URI = Thread.currentThread().getContextClassLoader().getResources(s).nextElement().toURI()
   def filesForUri(uri: URI): Array[File] = new File(uri).listFiles()
-  def fileToReader(f: File): Reader[Char] = StreamReader(new FileReader(f))
-
-  def prettyPrintJSON(json: JValue): String = net.liftweb.json.Printer.pretty(render(json))
 }
 

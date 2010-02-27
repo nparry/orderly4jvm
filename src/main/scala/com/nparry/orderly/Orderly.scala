@@ -32,11 +32,11 @@
  */
 package com.nparry.orderly
 
-import net.liftweb.json.JsonAST._
-import net.liftweb.json.Implicits._
+import net.liftweb.json.JsonAST.{JObject, JValue}
 
 object Orderly {
   def apply(s: String): Orderly = new Orderly(OrderlyParser.parse(s))
+  def apply(f: java.io.File): Orderly = new Orderly(OrderlyParser.parse(f))
 }
 
 /**
@@ -47,20 +47,20 @@ class Orderly(schema: JObject) {
   /**
    * Validate the given JSON against this Orderly schema
    */
-  def validate(instance: JValue): List[Violation] = {
-    JsonSchemaValidator.validate(instance, Some(schema))
+  def validate(value: JValue): List[Violation] = {
+    JsonSchemaValidator.validate(value, Some(schema))
   }
 
   /**
    * Parse and validate the given JSON against this Orderly schema
    */
-  def validate(instance: String): List[Violation] = {
-    validate(net.liftweb.json.JsonParser.parse(instance))
-  }
+  def validate(s: String): List[Violation] = validate(Json.parse(s))
+  
+  /**
+   * Parse and validate the given JSON against this Orderly schema
+   */
+  def validate(f: java.io.File): List[Violation] = validate(Json.parse(f))
 
-  override def toString() = {
-    net.liftweb.json.Printer.pretty(render(schema))
-  }
+  override def toString() = Json.prettyPrint(schema)
 }
-
 

@@ -35,7 +35,7 @@ package com.nparry.orderly
 import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.lexical._
-import scala.util.parsing.input.{Reader,CharArrayReader}
+import scala.util.parsing.input.{Reader, CharArrayReader, StreamReader}
 
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.Implicits._
@@ -49,6 +49,33 @@ import net.liftweb.json.Implicits._
  * http://github.com/lloyd/orderly/blob/master/docs.md
  */
 object OrderlyParser extends JavaTokenParsers {
+
+  /**
+   * Parse the given string and return a JObject of the resuling schema
+   */
+  def parse(s: String): JObject = parse(new CharArrayReader(s.toCharArray()))
+
+  /**
+   * Parse the given file and return a JObject of the resuling schema
+   */
+  def parse(f: java.io.File): JObject = {
+    val r = new java.io.FileReader(f)
+    try { parse(StreamReader(r)) } finally { r.close() }
+  }
+
+  /**
+   * Parse the given reader and return a JObject of the resuling schema
+   */
+  def parse(input: Reader[Char]): JObject  = try {
+    phrase(orderlySchema)(input) match {
+      case Success(result, _) => result
+      case Failure(msg, _) => throw new InvalidOrderly(msg)
+      case Error(msg, _) => throw new InvalidOrderly(msg)
+    }
+   } catch {
+     case e:NumberFormatException => throw new InvalidOrderly(e.getMessage())
+   }
+
 
   // Some helpers to shorten the code below
 
@@ -145,34 +172,6 @@ object OrderlyParser extends JavaTokenParsers {
     "null" ^^^ JNull |
     "true" ^^^ JBool(true) |
     "false" ^^^ JBool(false)
-
-
-  // Entry points
-
-  /**
-   * Parse the given string and return a JObject of the resuling schema
-   */
-  def parse(s: String): JObject = parse(new CharArrayReader(s.toCharArray()))
-
-  /**
-   * Parse the given reader and return a JObject of the resuling schema
-   */
-  def parse(input: Reader[Char]): JObject  =
-    try {
-     phrase(orderlySchema)(input) match {
-       case Success(result, _) => result
-       case Failure(msg, _) => throw new InvalidOrderly(msg)
-       case Error(msg, _) => throw new InvalidOrderly(msg)
-     }
-   } catch {
-     case e:NumberFormatException => throw new InvalidOrderly(e.getMessage())
-   }
- 
-  /*
-   * Orderly input to a pretty printed JSON schema output.
-   * Mostly useful for interactive testing
-   */
-  def schemaAsString(s: String) = net.liftweb.json.Printer.pretty(render(parse(s)))
 }
 
 /**
