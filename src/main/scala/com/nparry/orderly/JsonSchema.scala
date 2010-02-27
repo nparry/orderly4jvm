@@ -38,7 +38,9 @@ import net.liftweb.json.Implicits._
 /**
  * A problem detected by the validator for the given input
  */
-case class Violation(path: List[String], message: String) { }
+case class Violation(path: List[String], message: String) extends com.nparry.orderly.api.Violation {
+  override def getDescription(): String = message
+}
 
 /**
  * Internal errors in our schema

@@ -30,57 +30,53 @@
  *  IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-package com.nparry.orderly
+package com.nparry.orderly.api;
 
-import net.liftweb.json.JsonAST.{JObject, JValue}
-
-object Orderly {
-  def apply(s: String): Orderly = new Orderly(OrderlyParser.parse(s))
-  def apply(f: java.io.File): Orderly = new Orderly(OrderlyParser.parse(f))
-}
+import java.io.File;
+import java.util.List;
 
 /**
- * Easy Java access to Orderly
+ * Java view of the Orderly world.
  */
-class DefaultOrderlyFactory extends com.nparry.orderly.api.Orderly.Factory {
-
-    override def getOrderly(orderly: String): com.nparry.orderly.api.Orderly =
-      Orderly(orderly)
-
-    override def getOrderly(orderly: java.io.File): com.nparry.orderly.api.Orderly =
-      Orderly(orderly)
-}
-
-/**
- * The Scala front door to Orderly
- */
-class Orderly(schema: JObject) extends com.nparry.orderly.api.Orderly {
+public interface Orderly {
 
   /**
-   * Validate the given JSON against this Orderly schema
+   * Parse the string and check it against this Orderly instance.
+   *
+   * @param json Input to validate.
+   * @return A list of problems found.
    */
-  def validate(value: JValue): List[Violation] = {
-    JsonSchemaValidator.validate(value, Some(schema))
+  List<Violation> getViolations(String json);
+
+  /**
+   * Parse the file and check it against this Orderly instance.
+   *
+   * @param json Input to validate.
+   * @return A list of problems found.
+   */
+  List<Violation> getViolations(File json);
+
+  /**
+   * A source for Orderly instances.
+   */
+  public interface Factory {
+
+    /**
+     * Parse a string of Orderly.
+     *
+     * @param orderly Orderly input to parse.
+     * @return Orderly instance
+     */
+    Orderly getOrderly(String orderly);
+
+    /**
+     * Parse a file of Orderly.
+     *
+     * @param orderly Orderly input to parse.
+     * @return Orderly instance
+     */
+    Orderly getOrderly(File orderly);
   }
 
-  /**
-   * Parse and validate the given JSON against this Orderly schema
-   */
-  def validate(s: String): List[Violation] = validate(Json.parse(s))
-  
-  /**
-   * Parse and validate the given JSON against this Orderly schema
-   */
-  def validate(f: java.io.File): List[Violation] = validate(Json.parse(f))
-
-  // Java view of the world
-
-  override def getViolations(s: String): java.util.List[com.nparry.orderly.api.Violation] = toJavaSpeak(validate(s))
-  override def getViolations(f: java.io.File): java.util.List[com.nparry.orderly.api.Violation] = toJavaSpeak(validate(f))
-
-  def toJavaSpeak(l:List[Violation]): java.util.List[com.nparry.orderly.api.Violation] =
-    java.util.Arrays.asList(l.toArray: _*)
-
-  override def toString() = Json.prettyPrint(schema)
 }
 
