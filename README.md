@@ -28,8 +28,8 @@ From Java:
     OrderlyFaactory factory = new DefaultOrderlyFactory();
     Orderly orderly = factory.getOrderly("integer {0,100};");
     
-    List<Violation> noProblems = orderly.getViolations("200");
-    List<Violation> notAllowed = orderly.getViolations("50");
+    List<Violation> noProblems = orderly.getViolations("50");
+    List<Violation> notAllowed = orderly.getViolations("200");
 
 From Scala:
 
@@ -38,14 +38,31 @@ From Scala:
     
     val orderly = Orderly("integer {0,100};")
     
-    val noProblems = orderly.validate(JInt(200))
-    val notAllowed = orderly.validate(JInt(50))
+    val noProblems = orderly.validate(JInt(50))
+    val notAllowed = orderly.validate(JInt(200))
+
+An example of usage via the Scala console:
+
+    scala> val orderly = Orderly("integer {0,100};")
+    orderly: com.nparry.orderly.Orderly = 
+    {
+      "type":"integer",
+      "minimum":0,
+      "maximum":100
+    }
+    
+    scala> val noProblems = orderly.validate(JInt(50))
+    noProblems: List[com.nparry.orderly.Violation] = List()
+    
+    scala> val notAllowed = orderly.validate(JInt(200))
+    notAllowed: List[com.nparry.orderly.Violation] = List(Violation(List(),200 is greater than maximum allowed value))
 
 
 TODOs
 -----
 
 * Enhance Java APIs to use an actual Java JSON library.
+* Improve error messages for the parser and the validator.
 * The JSON schema validator needs some work.
 * Provide prebuilt jars with a Maven POM.
 
