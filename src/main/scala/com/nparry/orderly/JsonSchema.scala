@@ -217,9 +217,11 @@ object JsonSchemaValidator {
               (value("items") match {
                 case JNothing => ok()
                 case JArray(items) => {
-                  if (arr.length < items.length) violation("fewer elements than specified in the schema")
-                  else if ((arr.length > items.length) && !bool("additionalProperties", false)) violation("more elements than specified in the schema")
-                  else ((arr zip items) flatMap { pair => checkProp(pair._1, asObject(pair._2), path, i) })
+                  (if (arr.length < items.length) violation("fewer elements than specified in the schema")
+                  else ok()) ++
+                  (if ((arr.length > items.length) && !bool("additionalProperties", true)) violation("more elements than specified in the schema")
+                  else ok()) ++
+                  ((arr zip items) flatMap { pair => checkProp(pair._1, asObject(pair._2), path, i) })
                 }
                 case o @ JObject(_) => arr flatMap { v => checkProp(v, o, path, i) }
                 case _ => schemaProblem("invalid 'items' element in schema")
@@ -227,9 +229,10 @@ object JsonSchemaValidator {
               (if (BigInt(arr.length) < int("minItems", arr.length)) violation("minimum item count not met") else ok()) ++
               (if (BigInt(arr.length) > int("maxItems", arr.length)) violation("maximum item count exceeded") else ok())
             case o @ JObject(_) =>
-              (obj("properties", { props => checkObj(o, props, path, bool("additionalProperties", false)) }) getOrElse ok())
+              (obj("properties", { props => checkObj(o, props, path, bool("additionalProperties", true)) }) getOrElse ok())
             case JString(s) =>
               (if (s.matches(str("pattern", ".*"))) ok() else violation(s + " does not match " + str("pattern", ".*"))) ++
+              (if (s.equals(str("format", s))) ok() else violation(s + " does not match " + str("format", s))) ++
               (if (BigInt(s.length) < int("minLength", s.length)) violation(s + " is too short") else ok()) ++
               (if (BigInt(s.length) > int("maxLength", s.length)) violation(s + " is too long") else ok())
             case JInt(i) =>

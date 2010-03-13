@@ -74,6 +74,7 @@ object OrderlyParser extends JavaTokenParsers {
     }
    } catch {
      case e:NumberFormatException => throw new InvalidOrderly(e.getMessage())
+     case e:java.util.regex.PatternSyntaxException => throw new InvalidOrderly(e.getMessage())
    }
 
 
@@ -86,7 +87,8 @@ object OrderlyParser extends JavaTokenParsers {
     case _ => List(f(k, v))
   }
 
-  def l [A] (x: Option[List[A]]): List[A] = x getOrElse List()
+  def l [A] (x: Option[List[A]]): List[A] = l(x, List())
+  def l [A] (x: Option[List[A]], y: List[A]): List[A] = x getOrElse y
   def asInt(s: String): JValue = JInt(s.toInt)
   def asDub(s: String): JValue = try {
     asInt(s)
@@ -101,9 +103,14 @@ object OrderlyParser extends JavaTokenParsers {
   def namedEntries: Parser[JObject] =
     (rep1sep(namedEntry, ";") <~ opt(";")) ^^ { case x => JObject(x) } |
     success(JObject(List()))
-  def unnamedEntries: Parser[JArray] =
-    (rep1sep(unnamedEntry, ";") <~ opt(";")) ^^ { case x => JArray(x) } |
-    success(JArray(List()))
+  def unnamedEntries(min: Option[Int]): Parser[JArray] =
+    if (min.isDefined)
+      repN(min.get - 1, unnamedEntry <~ ";") ~ unnamedEntry ~ opt(";" ~> unnamedEntries(None)) ^^
+        { case f ~ m ~ Some(JArray(e)) =>  JArray(f ++ List(m) ++ e)
+          case f ~ m ~ None => JArray(f ++ List(m)) }
+    else
+      (rep1sep(unnamedEntry, ";") <~ opt(";")) ^^ { case x => JArray(x) } |
+      success(JArray(List()))
   def namedEntry: Parser[JField] =
     (definitionPrefix ~ propertyName ~ definitionSuffix) ^^ 
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) } |
@@ -118,13 +125,13 @@ object OrderlyParser extends JavaTokenParsers {
     "any"     ^^^ (List(t("any"))) |
     ("integer" ~> opt(range("minimum", "maximum"))) ^^ { r => t("integer") :: l(r) } |
     ("number"  ~> opt(range("minimum", "maximum"))) ^^ { r => t("number") :: l(r) } |
-    ("array" ~> "{" ~> unnamedEntries <~ "}") ~ opt(additionalMarker) ~ opt(range("minItems", "maxItems")) ^^
-      { case e ~ m ~ r =>  t("array") :: f("items", e) :: (l(r) ++ l(m)) } |
-    ("array" ~> "[" ~> unnamedEntry <~ opt(";") <~ "]") ~ opt(range("minItems", "maxItems")) ^^
-      { case e ~ r => t("array") :: f("items", e) :: l(r) } |
-    ("object" ~> "{" ~> namedEntries <~ "}") ~ opt(additionalMarker)  ^^
-      { case e ~ m => t("object") :: (fl("properties", e) ++ l(m)) } |
-    ("union" ~> "{" ~> unnamedEntries <~ "}") ^^ { case e => List(f("type", e)) }
+    ("array" ~> "{" ~> unnamedEntries(None) <~ "}") ~ additionalMarker ~ opt(range("minItems", "maxItems")) ^^
+      { case e ~ m ~ r =>  t("array") :: f("items", e) :: (l(r) ++ m) } |
+    ("array" ~> "[" ~> unnamedEntry <~ opt(";") <~ "]") ~ additionalMarker ~ opt(range("minItems", "maxItems")) ^^
+      { case e ~ m ~ r => t("array") :: f("items", e) :: (l(r) ++ m) } |
+    ("object" ~> "{" ~> namedEntries <~ "}") ~ additionalMarker  ^^
+      { case e ~ m => t("object") :: (fl("properties", e) ++ m) } |
+    ("union" ~> "{" ~> unnamedEntries(Some(2)) <~ "}") ^^ { case e => List(f("type", e)) }
   def stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength")) ^^
     { case r => t("string") :: l(r) }
   def stringSuffix: Parser[List[JField]] = opt(perlRegex) ~ definitionSuffix ^^
@@ -137,7 +144,7 @@ object OrderlyParser extends JavaTokenParsers {
   def rqires: Parser[List[JField]] = "<" ~> repsep(propertyName, ",") <~ ">" ^^
   { n => List(f("requires", n.size match { case 1 => n(0); case _ => JArray(n) })) }
   def optionalMarker: Parser[List[JField]] = "?" ^^^ List(f("optional", true))
-  def additionalMarker: Parser[List[JField]] = "*" ^^^ List(f("additionalProperties", true))
+  def additionalMarker: Parser[List[JField]] = opt("*") ^^ { m => if (m.isDefined) List() else List(f("additionalProperties", false)) }
   def enumValues: Parser[List[JField]] = jsonArray ^^
     { case a => List(f("enum", a)) }
   def defaultValue: Parser[List[JField]] = "=" ~> jsonValue ^^
@@ -154,7 +161,7 @@ object OrderlyParser extends JavaTokenParsers {
     ident ^^ { case s => JString(s) } |
     jsonStr
   def perlRegex: Parser[List[JField]] = ("/" ~> regex("[^/]+".r) <~ "/") ^^
-    { case r => List(f("pattern", r)) }
+    { case r => List(f("pattern", java.util.regex.Pattern.compile(r).pattern)) }
 
 
   // Mini grammar to parse JSON
