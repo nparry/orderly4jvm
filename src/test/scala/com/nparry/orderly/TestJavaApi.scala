@@ -32,22 +32,24 @@
  */
 package com.nparry.orderly
 
-import org.scalatest.FunSuite
+import org.specs.Specification
 
 import com.nparry.orderly.api._
 
-class TestJavaApi extends FunSuite {
+class TestJavaApi extends Specification {
 
-  test("using orderly from the java api") {
-    /*
-     TODO, figure out why SBT doesn't like this
+  "JavaApi" should {
+    "work but it doesn't yet" in {
+      /*
+       TODO, figure out why SBT doesn't like this
 
-    val factory = new DefaultOrderlyFactory()
+      val factory = new DefaultOrderlyFactory()
 
-    val orderly = factory.getOrderly("integer {0,100};")
-    assert(orderly.getViolations("200").size() == 1)
-    assert(orderly.getViolations("50").size() == 0)
-    */
+      val orderly = factory.getOrderly("integer {0,100};")
+      assert(orderly.getViolations("200").size() == 1)
+      assert(orderly.getViolations("50").size() == 0)
+      */
+    }
   }
 }
 

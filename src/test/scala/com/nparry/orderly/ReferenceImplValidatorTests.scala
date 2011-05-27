@@ -32,7 +32,7 @@
  */
 package com.nparry.orderly
 
-import org.scalatest.FunSuite
+import org.specs.Specification
 
 import java.io._
 import java.net.URI
@@ -40,47 +40,43 @@ import java.net.URI
 /**
  * Make sure our validation produces the same results as the RI.
  */
-class ReferenceImplValidatorTests extends FunSuite {
+class ReferenceImplValidatorTests extends Specification {
 
-  test("our validator passes the same JSON as the RI") {
-    processTests("pass", { (errors, orderlyInput, orderly, testInput) =>
-      errors.isEmpty match {
-        case true => 0
-        case false => {
-          System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
-          System.err.println(orderly.toString())
-          System.err.println("Input failed to validate: " + testInput + ", json is:")
-          System.err.println(Json.prettyPrint(testInput))
-          System.err.println("Validation errors are:")
-          System.err.println(errors)
-          1
+  "Our validator" should {
+    "pass the same JSON as the RI" in {
+      processTests("pass", { (errors, orderlyInput, orderly, testInput) =>
+        errors.isEmpty match {
+          case true => 0
+          case false => {
+            System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
+            System.err.println(orderly.toString())
+            System.err.println("Input failed to validate: " + testInput + ", json is:")
+            System.err.println(Json.prettyPrint(testInput))
+            System.err.println("Validation errors are:")
+            System.err.println(errors)
+            1
+          }
         }
-      }
-    }) match {
-      case 0 => true
-      case count => fail(count + " problems processing test cases that should validate")
+      }) mustEqual 0
+    }
+
+    "reject the same JSON as the RI" in {
+      processTests("fail", { (errors, orderlyInput, orderly, testInput) =>
+        errors.isEmpty match {
+          case false => 0
+          case true => {
+            System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
+            System.err.println(orderly.toString())
+            System.err.println("Input should have failed validation but did not: " + testInput + ", json is:")
+            System.err.println(Json.prettyPrint(testInput))
+            1
+          }
+        }
+      }) mustEqual 0
     }
   }
 
-  test("our validator rejects the same JSON as the RI") {
-    processTests("fail", { (errors, orderlyInput, orderly, testInput) =>
-      errors.isEmpty match {
-        case false => 0
-        case true => {
-          System.err.println("\nOrderly from " + orderlyInput + ", schema is:")
-          System.err.println(orderly.toString())
-          System.err.println("Input should have failed validation but did not: " + testInput + ", json is:")
-          System.err.println(Json.prettyPrint(testInput))
-          1
-        }
-      }
-    }) match {
-      case 0 => true
-      case count => fail(count + " problems processing test cases that should fail to validate")
-    }
-  }
-
-  def processTests(testName: String, processor: (List[Violation], File, Orderly, File) => int): Int = {
+  def processTests(testName: String, processor: (List[Violation], File, Orderly, File) => Int): Int = {
     ((locateOrderlyInput("referenceImplValidator") map {
       f=> (f, getValidatorInputs(f, testName)) }).foldLeft(0) { (errorCount, pair) =>
         val orderlyInput = pair._1

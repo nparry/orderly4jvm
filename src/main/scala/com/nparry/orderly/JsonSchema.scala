@@ -97,11 +97,7 @@ object JsonSchemaValidator {
       // A bunch of helper functions
       // TODO: Find some better way to create these with less duplicated code
 
-      def value(name: String): JValue = (schema \ name) match {
-        case JNothing => JNothing
-        case JField(_, v) => v
-        case _ => throw new SchemaProblem("Unexpected result looking for value " + name)
-      }
+      def value(name: String): JValue = (schema \ name)
 
       def bool(name: String, dflt: Boolean): Boolean = {
         value(name) match {
@@ -256,11 +252,7 @@ object JsonSchemaValidator {
       def ok(): List[Violation] = List()
       def violation(msg: String): List[Violation] = List(Violation(path, msg))
 
-      def value(obj: JObject, name: String): JValue = (obj \ name) match {
-        case JNothing => JNothing
-        case JField(_, v) => v
-        case _ => throw new SchemaProblem("Unexpected result looking for value " + name)
-      }
+      def value(obj: JObject, name: String): JValue = (obj \ name)
 
       def instanceHas(name: String): Boolean = {
         instance \ name match {
