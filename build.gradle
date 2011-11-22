@@ -49,10 +49,11 @@ eclipse {
 
 		buildCommand "org.eclipse.jdt.core.javabuilder"
 
-		natures "com.springsource.sts.grails.core.nature",
-			"org.eclipse.jdt.groovy.core.groovyNature",
-			"org.eclipse.jdt.core.javanature",
-	        	"com.springsource.sts.gradle.core.nature"
+	        natures	"com.springsource.sts.gradle.core.nature",
+			"ch.epfl.lamp.sdt.core.scalanature",
+			"org.eclipse.jdt.core.javanature"
+			//"com.springsource.sts.grails.core.nature",
+			//"org.eclipse.jdt.groovy.core.groovyNature",
 	}
 
 	classpath {
