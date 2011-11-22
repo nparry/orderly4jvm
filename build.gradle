@@ -1,5 +1,8 @@
 version = 0.1
 
+scalaVersion="2.8.1"
+liftVersion="2.8.1"
+
 apply plugin: 'scala'
 
 apply plugin: 'idea'
@@ -17,8 +20,9 @@ buildscript {
 }
 
 repositories {
-    mavenCentral()
-    mavenRepo url: "http://repository.jboss.org/maven2/"
+    	mavenCentral()
+	mavenRepo name:'scala-releases', url:'http://scala-tools.org/repo-releases/'
+    	//mavenRepo url: "http://repository.jboss.org/maven2/"
 }
 
 configurations {
@@ -27,11 +31,14 @@ configurations {
 
 dependencies {
 	// Libraries needed to run the scala tools
-	scalaTools 'org.scala-lang:scala-compiler:2.8.1'
-	scalaTools 'org.scala-lang:scala-library:2.8.1'
+	scalaTools "org.scala-lang:scala-compiler:$scalaVersion"
+	scalaTools "org.scala-lang:scala-library:$scalaVersion"
 
 	// Libraries needed for scala api
-	compile 'org.scala-lang:scala-library:2.8.1'
+	compile "org.scala-lang:scala-library:$liftVersion",
+		"net.liftweb:lift-mapper_$liftVersion:2.3",
+		"net.liftweb:lift-json_$liftVersion:2.3"
+		//"net.liftweb:archetypes_$liftVersion:2.3"
 
 	//runtime "", ""
 }
