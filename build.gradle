@@ -1,0 +1,87 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        //mavenRepo url: "http://repository.jboss.org/maven2/"
+    }
+
+    dependencies {
+    }
+}
+
+group = "com.nparry.orderly"
+version = "0.1-SNAPSHOT"
+
+scalaVersion="2.8.1"
+liftVersion="2.8.1"
+
+apply plugin: 'scala'
+
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+apply plugin: 'maven'
+
+repositories {
+    	mavenCentral()
+	mavenRepo name:'scala-releases', url:'http://scala-tools.org/repo-releases/'
+    	//mavenRepo url: "http://repository.jboss.org/maven2/"
+}
+
+configurations {
+	//all*.exclude group: 'xml-apis',  module: 'xml-apis'
+}
+
+dependencies {
+	// Libraries needed to run the scala tools
+	scalaTools "org.scala-lang:scala-compiler:$scalaVersion"
+	scalaTools "org.scala-lang:scala-library:$scalaVersion"
+
+	// Libraries needed for scala api
+	compile "org.scala-lang:scala-library:$liftVersion",
+		"net.liftweb:lift-mapper_$liftVersion:2.3",
+		"net.liftweb:lift-json_$liftVersion:2.3"
+		//"net.liftweb:archetypes_$liftVersion:2.3"
+
+	//runtime "", ""
+}
+
+// if you want to use the gradle wrapper
+task('wrapper', type: Wrapper).configure {
+    gradleVersion = '1.0-milestone-6'
+}
+
+def versionCompatibility = 1.6
+
+eclipse {
+	project {
+		comment = ""
+
+		buildCommand "org.eclipse.jdt.core.javabuilder"
+
+	        natures	"com.springsource.sts.gradle.core.nature",
+			"ch.epfl.lamp.sdt.core.scalanature",
+			"org.eclipse.jdt.core.javanature"
+			//"com.springsource.sts.grails.core.nature",
+			//"org.eclipse.jdt.groovy.core.groovyNature",
+	}
+
+	classpath {
+        	containers "com.springsource.sts.gradle.classpathcontainer"
+	}
+}
+
+idea {
+	project {
+        	jdkName = versionCompatibility
+
+		ipr {
+        		withXml { provider ->
+            		def node = provider.asNode()
+			
+            		// Set Gradle home
+            		def gradleSettings = node.appendNode('component', [name: 'GradleSettings'])
+            		gradleSettings.appendNode('option', [name: 'SDK_HOME', value: gradle.gradleHomeDir])
+        		}
+		}
+	}
+}
