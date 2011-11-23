@@ -64,5 +64,7 @@ TODOs
 * Enhance Java APIs to use an actual Java JSON library.
 * Improve error messages for the parser and the validator.
 * The JSON schema validator needs some work.
-* Provide prebuilt jars with a Maven POM.
+* Provide prebuilt jars with a Maven POM <- See [Gradle Maven Plugin][2] and [Maven-Pom-enabled 'build.gradle' example][1]
 
+[1]: http://svn.codehaus.org/griffon/builders/cssbuilder/trunk/build.gradle
+[2]: http://gradle.org/maven_plugin
