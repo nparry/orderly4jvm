@@ -2,7 +2,7 @@ organization := "com.nparry"
 
 name := "orderly"
 
-version := "1.0"
+version := "1.0.1"
 
 libraryDependencies ++= Seq(
   "net.liftweb" %% "lift-json" % "2.4",
