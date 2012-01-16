@@ -23,7 +23,7 @@ publishTo <<= (version) { version: String =>
   Some(Resolver.ssh(
     repoInfo._1,
     "repository.nparry.com",
-    repoInfo._2) as(user, keyFile))
+    repoInfo._2) as(user, keyFile) withPermissions("0644"))
 }
 
 pomExtra :=
