@@ -2,9 +2,11 @@ organization := "com.nparry"
 
 name := "orderly"
 
-version := "1.0.1"
+version := "1.0.2-SNAPSHOT"
 
 description := "An implementation of Orderly JSON (http://orderly-json.org/) for use on the JVM"
+
+licenses += "BSD license" -> url("http://www.opensource.org/licenses/bsd-license.php" )
 
 libraryDependencies ++= Seq(
   "net.liftweb" %% "lift-json" % "2.4",
@@ -25,13 +27,4 @@ publishTo <<= (version) { version: String =>
     "repository.nparry.com",
     repoInfo._2) as(user, keyFile) withPermissions("0644"))
 }
-
-pomExtra :=
-  <licenses>
-    <license>
-      <name>BSD license</name>
-      <url>http://www.opensource.org/licenses/bsd-license.php</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
 
