@@ -35,10 +35,10 @@ package com.nparry.orderly
 import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.lexical._
-import scala.util.parsing.input.{Reader, CharArrayReader, StreamReader}
 
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.Implicits._
+import util.parsing.input.{CharSequenceReader, Reader, StreamReader}
 
 /**
  * An implementation of Orderly JSON (http://orderly-json.org/).
@@ -53,7 +53,7 @@ object OrderlyParser extends JavaTokenParsers {
   /**
    * Parse the given string and return a JObject of the resuling schema
    */
-  def parse(s: String): JObject = parse(new CharArrayReader(s.toCharArray()))
+  def parse(s: String): JObject = parse(new CharSequenceReader(s))
 
   /**
    * Parse the given file and return a JObject of the resuling schema
