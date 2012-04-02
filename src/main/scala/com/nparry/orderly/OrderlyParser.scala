@@ -35,10 +35,10 @@ package com.nparry.orderly
 import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.lexical._
-import scala.util.parsing.input.{Reader, CharArrayReader, StreamReader}
 
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.Implicits._
+import util.parsing.input.{CharSequenceReader, Reader, StreamReader}
 
 /**
  * An implementation of Orderly JSON (http://orderly-json.org/).
@@ -53,7 +53,7 @@ object OrderlyParser extends JavaTokenParsers {
   /**
    * Parse the given string and return a JObject of the resuling schema
    */
-  def parse(s: String): JObject = parse(new CharArrayReader(s.toCharArray()))
+  def parse(s: String): JObject = parse(new CharSequenceReader(s))
 
   /**
    * Parse the given file and return a JObject of the resuling schema
@@ -99,8 +99,8 @@ object OrderlyParser extends JavaTokenParsers {
 
   // The orderly grammar
 
-  def orderlySchema: Parser[JObject] = unnamedEntry <~ opt(";")
-  def namedEntries: Parser[JObject] =
+  lazy val orderlySchema: Parser[JObject] = unnamedEntry <~ opt(";")
+  lazy val namedEntries: Parser[JObject] =
     (rep1sep(namedEntry, ";") <~ opt(";")) ^^ { case x => JObject(x) } |
     success(JObject(List()))
   def unnamedEntries(min: Option[Int]): Parser[JArray] =
@@ -111,15 +111,15 @@ object OrderlyParser extends JavaTokenParsers {
     else
       (rep1sep(unnamedEntry, ";") <~ opt(";")) ^^ { case x => JArray(x) } |
       success(JArray(List()))
-  def namedEntry: Parser[JField] =
+  lazy val namedEntry: Parser[JField] =
     (definitionPrefix ~ propertyName ~ definitionSuffix) ^^ 
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) } |
     (stringPrefix ~ propertyName ~ stringSuffix) ^^ 
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) }
-  def unnamedEntry: Parser[JObject] =
+  lazy val unnamedEntry: Parser[JObject] =
     (definitionPrefix ~ definitionSuffix) ^^ { case p ~ s => JObject(p ++ s) } |
     (stringPrefix ~ stringSuffix) ^^ { case p ~ s => JObject(p ++ s) }
-  def definitionPrefix: Parser[List[JField]] =
+  lazy val definitionPrefix: Parser[List[JField]] =
     "boolean" ^^^ (List(t("boolean"))) | 
     "null"    ^^^ (List(t("null"))) |
     "any"     ^^^ (List(t("any"))) |
@@ -132,22 +132,22 @@ object OrderlyParser extends JavaTokenParsers {
     ("object" ~> "{" ~> namedEntries <~ "}") ~ additionalMarker  ^^
       { case e ~ m => t("object") :: (fl("properties", e) ++ m) } |
     ("union" ~> "{" ~> unnamedEntries(Some(2)) <~ "}") ^^ { case e => List(f("type", e)) }
-  def stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength")) ^^
+  lazy val stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength")) ^^
     { case r => t("string") :: l(r) }
-  def stringSuffix: Parser[List[JField]] = opt(perlRegex) ~ definitionSuffix ^^
+  lazy val stringSuffix: Parser[List[JField]] = opt(perlRegex) ~ definitionSuffix ^^
     { case r ~ s => l(r) ++ s }
-  def definitionSuffix: Parser[List[JField]] =
+  lazy val definitionSuffix: Parser[List[JField]] =
     opt(enumValues) ~ opt(defaultValue) ~ opt(rqires) ~ opt(optionalMarker) ~ opt(extraProperties) ^^
     { case e ~ d ~ r ~ m ~ x => l(e) ++ l(d) ++ l(m) ++ l(r) ++ l(x) }
-  def extraProperties: Parser[List[JField]] = "`" ~> jsonObj <~ "`" ^^
+  lazy val extraProperties: Parser[List[JField]] = "`" ~> jsonObj <~ "`" ^^
     { case JObject(l) => l }
-  def rqires: Parser[List[JField]] = "<" ~> repsep(propertyName, ",") <~ ">" ^^
+  lazy val rqires: Parser[List[JField]] = "<" ~> repsep(propertyName, ",") <~ ">" ^^
   { n => List(f("requires", n.size match { case 1 => n(0); case _ => JArray(n) })) }
-  def optionalMarker: Parser[List[JField]] = "?" ^^^ List(f("optional", true))
-  def additionalMarker: Parser[List[JField]] = opt("*") ^^ { m => if (m.isDefined) List() else List(f("additionalProperties", false)) }
-  def enumValues: Parser[List[JField]] = jsonArray ^^
+  lazy val optionalMarker: Parser[List[JField]] = "?" ^^^ List(f("optional", true))
+  lazy val additionalMarker: Parser[List[JField]] = opt("*") ^^ { m => if (m.isDefined) List() else List(f("additionalProperties", false)) }
+  lazy val enumValues: Parser[List[JField]] = jsonArray ^^
     { case a => List(f("enum", a)) }
-  def defaultValue: Parser[List[JField]] = "=" ~> jsonValue ^^
+  lazy val defaultValue: Parser[List[JField]] = "=" ~> jsonValue ^^
     { case d => List(f("default", d)) }
   def range(l:String, h:String): Parser[List[JField]] =
     ("{" ~> jsonNum ~ "," ~ jsonNum <~ "}") ^^
@@ -157,21 +157,21 @@ object OrderlyParser extends JavaTokenParsers {
     ("{" ~> "," ~> jsonNum <~ "}") ^^
       { case max => List(f(h, max)) } |
     ("{" ~ "," ~ "}") ^^^ List()
-  def propertyName: Parser[JString] =
+  lazy val propertyName: Parser[JString] =
     ident ^^ { case s => JString(s) } |
     jsonStr
-  def perlRegex: Parser[List[JField]] = ("/" ~> regex("[^/]+".r) <~ "/") ^^
+  lazy val perlRegex: Parser[List[JField]] = ("/" ~> regex("[^/]+".r) <~ "/") ^^
     { case r => List(f("pattern", java.util.regex.Pattern.compile(r).pattern)) }
 
 
   // Mini grammar to parse JSON
 
-  def jsonObj: Parser[JObject] = "{" ~> repsep(jsonMember, ",") <~ "}" ^^ { JObject(_) }
-  def jsonMember = jsonStr ~ ":" ~ jsonValue ^^ { case k ~ ":" ~ v => f(k.values, v) }
-  def jsonArray = ("[" ~> repsep(jsonValue, ",") <~ "]") ^^ { JArray(_) }
-  def jsonStr = stringLiteral ^^ { case s => JString(s.substring(1, s.length() - 1)) }
-  def jsonNum = floatingPointNumber ^^ { case n => asDub(n) }
-  def jsonValue: Parser[JValue] =
+  lazy val jsonObj: Parser[JObject] = "{" ~> repsep(jsonMember, ",") <~ "}" ^^ { JObject(_) }
+  lazy val jsonMember = jsonStr ~ ":" ~ jsonValue ^^ { case k ~ ":" ~ v => f(k.values, v) }
+  lazy val jsonArray = ("[" ~> repsep(jsonValue, ",") <~ "]") ^^ { JArray(_) }
+  lazy val jsonStr = stringLiteral ^^ { case s => JString(s.substring(1, s.length() - 1)) }
+  lazy val jsonNum = floatingPointNumber ^^ { case n => asDub(n) }
+  lazy val jsonValue: Parser[JValue] =
     jsonObj |
     jsonArray |
     jsonStr |
