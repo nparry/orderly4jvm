@@ -124,10 +124,10 @@ object JsonSchemaValidator {
         }
       }
 
-      def str(name: String, dflt: String): String = {
+      def str(name: String): Option[String] = {
         value(name) match {
-          case JNothing => dflt
-          case JString(s) => s
+          case JNothing => None
+          case JString(s) => Some(s)
           case _ => schemaProblem("expected a string named " + name)
         }
       }
@@ -227,8 +227,14 @@ object JsonSchemaValidator {
             case o @ JObject(_) =>
               (obj("properties", { props => checkObj(o, props, path, bool("additionalProperties", true)) }) getOrElse ok())
             case JString(s) =>
-              (if (s.matches(str("pattern", ".*"))) ok() else violation(s + " does not match " + str("pattern", ".*"))) ++
-              (if (s.equals(str("format", s))) ok() else violation(s + " does not match " + str("format", s))) ++
+              str("pattern").map { regex => {
+                if(s.matches(regex)) ok()
+                else violation(s + " does not match " + regex)
+              }}.getOrElse(ok()) ++
+              str("format").map { format => {
+                if(s.equals(format)) ok()
+                else violation(s + " does not match " + format)
+              }}.getOrElse(ok()) ++
               (if (BigInt(s.length) < int("minLength", s.length)) violation(s + " is too short") else ok()) ++
               (if (BigInt(s.length) > int("maxLength", s.length)) violation(s + " is too long") else ok())
             case JInt(i) =>

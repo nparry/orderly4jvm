@@ -114,6 +114,7 @@ class ReferenceImplValidatorTests extends Specification {
     ) 
   }
 
+
   def makeOrderly(f: File): Orderly = try {
     Orderly(f)
   } catch {
