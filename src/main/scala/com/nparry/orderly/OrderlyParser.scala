@@ -48,21 +48,23 @@ import util.parsing.input.{CharSequenceReader, Reader, StreamReader}
  * This is based on the Orderly grammar at:
  * http://github.com/lloyd/orderly/blob/master/docs.md
  */
-object OrderlyParser extends JavaTokenParsers {
 
+object OrderlyParser {
   /**
    * Parse the given string and return a JObject of the resuling schema
    */
-  def parse(s: String): JObject = parse(new CharSequenceReader(s))
+  def parse(s: String): JObject = (new OrderlyParser()).parse(new CharSequenceReader(s))
 
   /**
    * Parse the given file and return a JObject of the resuling schema
    */
   def parse(f: java.io.File): JObject = {
     val r = new java.io.FileReader(f)
-    try { parse(StreamReader(r)) } finally { r.close() }
+    try { (new OrderlyParser()).parse(StreamReader(r)) } finally { r.close() }
   }
+}
 
+class OrderlyParser extends JavaTokenParsers {
   /**
    * Parse the given reader and return a JObject of the resuling schema
    */
@@ -76,7 +78,6 @@ object OrderlyParser extends JavaTokenParsers {
      case e:NumberFormatException => throw new InvalidOrderly(e.getMessage())
      case e:java.util.regex.PatternSyntaxException => throw new InvalidOrderly(e.getMessage())
    }
-
 
   // Some helpers to shorten the code below
 
