@@ -63,6 +63,11 @@ class SimpleSchemaValidationTests extends Specification {
       o.validate(Json.parse("""[ "foo", "bar" ]""")).size mustEqual 1
     }
   
+    "do string validation with strings containing newlines" in {
+      val o = Orderly("string;")
+      o.validate(JString("foo\n")).size mustEqual (0)
+    }
+  
     "do number validation" in {
       val o = Orderly("number;")
   
