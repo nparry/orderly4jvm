@@ -2,7 +2,7 @@ organization := "com.nparry"
 
 name := "orderly"
 
-version := "1.0.3"
+version := "1.0.4-SNAPSHOT"
 
 description := "An implementation of Orderly JSON (http://orderly-json.org/) for use on the JVM"
 
