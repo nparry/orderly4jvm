@@ -118,6 +118,22 @@ class SimpleSchemaValidationTests extends Specification {
       o.validate(JBool(true)).size mustEqual 1
       o.validate(Json.parse("""{ "foo": "bar" }""")).size mustEqual 1
     }
+
+    "do empty object validation" in {
+      val o = Orderly("object {};")
+      
+      o.validate(Json.parse("""{ "foo": 1 }""")).size mustEqual 1  
+      o.validate(JObject(List[JField]())).size mustEqual 0
+    }
+
+    "do object union validation" in {
+      val o = Orderly("union { object { string foo; }; object {}; }")
+      
+      o.validate(Json.parse("""{ "foo": "bar" }""")).size mustEqual 0
+      o.validate(Json.parse("""{ "foo": 1 }""")).size mustEqual 2
+  
+      o.validate(JObject(List[JField]())).size mustEqual 0
+    }
   }
 }
 
