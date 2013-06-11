@@ -132,10 +132,11 @@ object JsonSchemaValidator {
         }
       }
 
-      def obj(name: String, f: JObject => List[Violation]): Option[List[Violation]] = {
-        value(name) match {
-          case JNothing => None
-          case o @ JObject(_) => Some(f(o))
+      def obj(name: String, f: JObject => List[Violation], fallback: Option[JObject] = None): Option[List[Violation]] = {
+        (value(name), fallback) match {
+          case (JNothing, None) => None
+          case (JNothing, Some(default)) => Some(f(default))
+          case (o @ JObject(_), _) => Some(f(o))
           case _ => schemaProblem("expected an object named '" + name + "'")
         }
       }
@@ -224,8 +225,13 @@ object JsonSchemaValidator {
               }) ++
               (if (BigInt(arr.length) < int("minItems", arr.length)) violation("minimum item count not met") else ok()) ++
               (if (BigInt(arr.length) > int("maxItems", arr.length)) violation("maximum item count exceeded") else ok())
-            case o @ JObject(_) =>
-              (obj("properties", { props => checkObj(o, props, path, bool("additionalProperties", true)) }) getOrElse ok())
+            case o @ JObject(_) => {
+              val defaultPropertyRules = value("type") match {
+                case JString("array") => None
+                case _ => Some(JObject(List()))
+              }
+              (obj("properties", { props => checkObj(o, props, path, bool("additionalProperties", true)) }, defaultPropertyRules) getOrElse ok())
+            }
             case JString(s) =>
               str("pattern").map { regex => {
                 if(s.matches(regex)) ok()
