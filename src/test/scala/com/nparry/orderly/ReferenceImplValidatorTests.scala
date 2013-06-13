@@ -32,7 +32,7 @@
  */
 package com.nparry.orderly
 
-import org.specs.Specification
+import org.specs2.mutable._
 
 import java.io._
 import java.net.URI

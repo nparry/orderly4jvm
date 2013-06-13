@@ -32,7 +32,7 @@
  */
 package com.nparry.orderly
 
-import org.specs.Specification
+import org.specs2.mutable._
 
 import com.nparry.orderly.api._
 
