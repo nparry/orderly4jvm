@@ -13,6 +13,8 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2" % "1.12.3" % "test"
 )
 
+crossScalaVersions := Seq("2.9.2", "2.10.2")
+
 publishMavenStyle := true
 
 publishTo <<= (version) { version: String =>
