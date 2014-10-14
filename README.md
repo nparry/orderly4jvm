@@ -7,7 +7,22 @@ the JVM.  The parser is written in Scala.
 A JSON schema validator is also included, so you can validate JSON values against
 your Orderly definitions.
 
-Prebuilt jars/POMs/etc are published at http://repository.nparry.com/releases/com/nparry/orderly_2.9.1/
+Prebuilt jars/POMs/etc are published to http://repository.nparry.com/releases,
+which you should be able to add to your dependency manager of choice. In
+Maven-ese, this would look something like...
+
+    <repositories>
+      <repository>
+        <id>nparry-releases</id>
+        <url>http://repository.nparry.com/releases</url>
+        <releases>
+          <enabled>true</enabled>
+        </releases>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+      </repository>
+    </repositories>
 
 This implementation uses the same test suite as the reference implementation to
 help ensure consistent behavior.  If you find a case that produces different
@@ -58,12 +73,4 @@ An example of usage via the Scala console:
 
     scala> val notAllowed = orderly.validate(JInt(200))
     notAllowed: List[com.nparry.orderly.Violation] = List(Violation(List(),200 is greater than maximum allowed value))
-
-
-TODOs
------
-
-* Enhance Java APIs to use an actual Java JSON library.
-* Improve error messages for the parser and the validator.
-* The JSON schema validator needs some work.
 
