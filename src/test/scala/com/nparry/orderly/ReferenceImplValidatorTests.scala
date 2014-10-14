@@ -126,7 +126,7 @@ class ReferenceImplValidatorTests extends Specification {
       }
     } catch {
       // If the fallback fails, throw the original exception
-      case _ => throw e
+      case _:Throwable => throw e
     }
   }
 

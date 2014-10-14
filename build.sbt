@@ -9,11 +9,11 @@ description := "An implementation of Orderly JSON (http://orderly-json.org/) for
 licenses += "BSD license" -> url("http://www.opensource.org/licenses/bsd-license.php" )
 
 libraryDependencies ++= Seq(
-  "net.liftweb" %% "lift-json" % "2.5",
-  "org.specs2" %% "specs2" % "1.12.3" % "test"
+  "net.liftweb" %% "lift-json" % "2.6-M4",
+  "org.specs2" %% "specs2" % "2.4" % "test"
 )
 
-crossScalaVersions := Seq("2.9.2", "2.10.2")
+crossScalaVersions := Seq("2.10.4", "2.11.2")
 
 publishMavenStyle := true
 
