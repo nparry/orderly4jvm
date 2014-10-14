@@ -1,3 +1,6 @@
+Orderly4JVM [![Build Status](https://travis-ci.org/nparry/orderly4jvm.svg)](https://travis-ci.org/nparry/orderly4jvm)
+===========
+
 About
 -----
 
