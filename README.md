@@ -1,4 +1,4 @@
-Orderly4JVM [![Build Status](https://travis-ci.org/nparry/orderly4jvm.svg)](https://travis-ci.org/nparry/orderly4jvm)
+Orderly4JVM [![Build Status](https://travis-ci.org/nparry/orderly4jvm.svg)](https://travis-ci.org/nparry/orderly4jvm) [ ![Download](https://api.bintray.com/packages/nparry/maven/orderly/images/download.svg) ](https://bintray.com/nparry/maven/orderly/_latestVersion)
 ===========
 
 About
@@ -10,22 +10,11 @@ the JVM.  The parser is written in Scala.
 A JSON schema validator is also included, so you can validate JSON values against
 your Orderly definitions.
 
-Prebuilt jars/POMs/etc are published to http://repository.nparry.com/releases,
-which you should be able to add to your dependency manager of choice. In
-Maven-ese, this would look something like...
+To use this library in your own project, include the following in your build.sbt file:
 
-    <repositories>
-      <repository>
-        <id>nparry-releases</id>
-        <url>http://repository.nparry.com/releases</url>
-        <releases>
-          <enabled>true</enabled>
-        </releases>
-        <snapshots>
-          <enabled>false</enabled>
-        </snapshots>
-      </repository>
-    </repositories>
+    resolvers += "Nathan Parry's bintray repo" at "http://dl.bintray.com/nparry/maven/"
+
+    libraryDependencies += "com.nparry" %% "orderly" % "LATEST_VERSION"
 
 This implementation uses the same test suite as the reference implementation to
 help ensure consistent behavior.  If you find a case that produces different
