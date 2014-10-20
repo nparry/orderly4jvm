@@ -1,7 +1,4 @@
-lib
-lib_managed
 project/boot
 target
 *.swp
 .DS_Store
-.bintray

@@ -6,5 +6,6 @@ env:
   global:
   - secure: JRUzWio2nli9lIn1COiABW/5HqOpEEG4lUYwt0QardhxNW8UC67SRPv/oQgXenKQJxsYQJDum74gS6MEoWuyVQ9nErXvaF3GG1O/n6BZ+Al5q68jlNBr+ZQmZjaWLoXOT6PrnC6vf5plqAghRxcimB0+diEtvCJ2q2Az0EbTdEQ=
   - secure: P3Cn2C3b1CRCZ02zzFuVs4Fv2B+Gxmf7RzUMGNIqx5tDSxcHOKzeAf+BI3Bx0+1ggitkLmy3Q3hJvBWsqg6+o6UhqTZpmUIERkahpF2mGW03XFklQiN8ExJp0x2h3DZRbUfm9h740/bam/BpV5j9HpB8klucSe6meKfZmvXHDlA=
+  - secure: f9HLvHdjoG4+SAMq9r67X45K+TuqKcgffYShUQ2lP5+KTesl/PwY3OfhimkrQ7NwrW2tTt9K0mCUj1s8/3yQPMpehQl5rdSntvbp/L4LBi7WruGqIda9EoP3nHt4adnvSM/7Qyx5Qo5iXIHSCFu2BfGGPaS8OMvcUbmiVSdzoHE=
 after_success:
-  "./publish/is-publish-wanted.sh && ./publish/bintray-credentials.sh && sbt ++$TRAVIS_SCALA_VERSION publish"
+  "./publish/is-publish-wanted.sh && ./publish/setup-publish-credentials.sh && sbt ++$TRAVIS_SCALA_VERSION publish-signed"

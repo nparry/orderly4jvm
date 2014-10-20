@@ -34,6 +34,10 @@ publishMavenStyle := true
 
 pomIncludeRepository := { _ => false }
 
+pgpSecretRing := file(sys.props("user.home") + "/.bintray/bintray.asc")
+
+pgpPassphrase := Some(scala.util.Try(sys.env("BINTRAY_PASSPHRASE")).getOrElse("fail").toCharArray)
+
 seq(bintraySettings:_*)
 
 bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("json", "orderly")
