@@ -10,15 +10,14 @@ the JVM.  The parser is written in Scala.
 A JSON schema validator is also included, so you can validate JSON values against
 your Orderly definitions.
 
-To use this library in your own project, include the following in your build.sbt file:
-
-    resolvers += "Nathan Parry's bintray repo" at "http://dl.bintray.com/nparry/maven/"
-
-    libraryDependencies += "com.nparry" %% "orderly" % "LATEST_VERSION"
-
 This implementation uses the same test suite as the reference implementation to
 help ensure consistent behavior.  If you find a case that produces different
 output, please let me know and I will add it to the test suite.
+
+Release artifacts are [available via the JCenter repository](https://bintray.com/bintray/jcenter?filterByPkgName=orderly). Once your
+build tool is configured to use JCenter, you can download this library using coordinates com.nparry:orderly:VERSION - for example in your build.sbt:
+
+    libraryDependencies += "com.nparry" %% "orderly" % "LATEST_VERSION"
 
 This project is covered by the [BSD license](http://www.opensource.org/licenses/bsd-license.php).
 
