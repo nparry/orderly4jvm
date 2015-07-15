@@ -5,19 +5,19 @@
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
  *  met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in
  *     the documentation and/or other materials provided with the
  *     distribution.
- * 
+ *
  *  3. Neither the name of Nathan Parry nor the names of any
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  *  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -80,15 +80,18 @@ class OrderlyParser extends JavaTokenParsers {
    }
 
   // Some helpers to shorten the code below
+  private val ø = List.empty
 
+  // comments.
+  def c = rep("""(#|\\).*(\n|\r)?""".r)
   def t(name: String) = f("type", name)
   def f(k: String, v: JValue) = JField(k, v)
   def fl(k: String, v: JObject) = v.values.size match {
-    case 0 => List()
+    case 0 => ø
     case _ => List(f(k, v))
   }
 
-  def l [A] (x: Option[List[A]]): List[A] = l(x, List())
+  def l [A] (x: Option[List[A]]): List[A] = l(x, ø)
   def l [A] (x: Option[List[A]], y: List[A]): List[A] = x getOrElse y
   def asInt(s: String): JValue = JInt(s.toInt)
   def asDub(s: String): JValue = try {
@@ -99,11 +102,10 @@ class OrderlyParser extends JavaTokenParsers {
   }
 
   // The orderly grammar
-
-  lazy val orderlySchema: Parser[JObject] = unnamedEntry <~ opt(";")
+  lazy val orderlySchema: Parser[JObject] = c ~> unnamedEntry <~ c <~ opt(";") <~ c
   lazy val namedEntries: Parser[JObject] =
-    (rep1sep(namedEntry, ";") <~ opt(";")) ^^ { case x => JObject(x) } |
-    success(JObject(List()))
+    (rep1sep(namedEntry, ";") <~ opt(";") <~ c) ^^ { case x => JObject(x) } |
+    success(JObject(ø))
   def unnamedEntries(min: Option[Int]): Parser[JArray] =
     if (min.isDefined)
       repN(min.get - 1, unnamedEntry <~ ";") ~ unnamedEntry ~ opt(";" ~> unnamedEntries(None)) ^^
@@ -111,28 +113,28 @@ class OrderlyParser extends JavaTokenParsers {
           case f ~ m ~ None => JArray(f ++ List(m)) }
     else
       (rep1sep(unnamedEntry, ";") <~ opt(";")) ^^ { case x => JArray(x) } |
-      success(JArray(List()))
+      success(JArray(ø))
   lazy val namedEntry: Parser[JField] =
-    (definitionPrefix ~ propertyName ~ definitionSuffix) ^^ 
+    (c ~> definitionPrefix ~ propertyName ~ definitionSuffix <~ c) ^^
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) } |
-    (stringPrefix ~ propertyName ~ stringSuffix) ^^ 
+    (c ~> stringPrefix ~ propertyName ~ stringSuffix <~ c) ^^
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) }
   lazy val unnamedEntry: Parser[JObject] =
-    (definitionPrefix ~ definitionSuffix) ^^ { case p ~ s => JObject(p ++ s) } |
-    (stringPrefix ~ stringSuffix) ^^ { case p ~ s => JObject(p ++ s) }
+    ((definitionPrefix ~ definitionSuffix) <~ c) ^^ { case p ~ s => JObject(p ++ s) } |
+    (stringPrefix ~ stringSuffix <~ c) ^^ { case p ~ s => JObject(p ++ s) }
   lazy val definitionPrefix: Parser[List[JField]] =
-    "boolean" ^^^ (List(t("boolean"))) | 
+    "boolean" ^^^ (List(t("boolean"))) |
     "null"    ^^^ (List(t("null"))) |
     "any"     ^^^ (List(t("any"))) |
-    ("integer" ~> opt(range("minimum", "maximum"))) ^^ { r => t("integer") :: l(r) } |
-    ("number"  ~> opt(range("minimum", "maximum"))) ^^ { r => t("number") :: l(r) } |
-    ("array" ~> "{" ~> unnamedEntries(None) <~ "}") ~ additionalMarker ~ opt(range("minItems", "maxItems")) ^^
+    ("integer" ~> c ~> opt(range("minimum", "maximum")) <~ c) ^^ { r => t("integer") :: l(r) } |
+    ("number"  ~> c ~> opt(range("minimum", "maximum")) <~ c) ^^ { r => t("number") :: l(r) } |
+    ("array"  ~> c ~> "{" ~> c ~> unnamedEntries(None) <~ c <~ "}") ~ additionalMarker ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ m ~ r =>  t("array") :: f("items", e) :: (l(r) ++ m) } |
-    ("array" ~> "[" ~> unnamedEntry <~ opt(";") <~ "]") ~ additionalMarker ~ opt(range("minItems", "maxItems")) ^^
+    ("array" ~> c ~> "[" ~> c ~> unnamedEntry <~ opt(";") <~ c <~ "]") ~ additionalMarker ~ opt(range("minItems", "maxItems")) ^^
       { case e ~ m ~ r => t("array") :: f("items", e) :: (l(r) ++ m) } |
-    ("object" ~> "{" ~> namedEntries <~ "}") ~ additionalMarker  ^^
+    ("object" ~> c ~> "{" ~> c ~> namedEntries <~ c <~ "}") ~ additionalMarker  ^^
       { case e ~ m => t("object") :: (fl("properties", e) ++ m) } |
-    ("union" ~> "{" ~> unnamedEntries(Some(2)) <~ "}") ^^ { case e => List(f("type", e)) }
+    ("union" ~> c ~> "{" ~> c ~> unnamedEntries(Some(2)) <~ c <~ "}") ^^ { case e => List(f("type", e)) }
   lazy val stringPrefix: Parser[List[JField]] = "string" ~> opt(range("minLength", "maxLength")) ^^
     { case r => t("string") :: l(r) }
   lazy val stringSuffix: Parser[List[JField]] = opt(perlRegex) ~ definitionSuffix ^^
@@ -145,7 +147,7 @@ class OrderlyParser extends JavaTokenParsers {
   lazy val rqires: Parser[List[JField]] = "<" ~> repsep(propertyName, ",") <~ ">" ^^
   { n => List(f("requires", n.size match { case 1 => n(0); case _ => JArray(n) })) }
   lazy val optionalMarker: Parser[List[JField]] = "?" ^^^ List(f("optional", true))
-  lazy val additionalMarker: Parser[List[JField]] = opt("*") ^^ { m => if (m.isDefined) List() else List(f("additionalProperties", false)) }
+  lazy val additionalMarker: Parser[List[JField]] = opt("*") ^^ { m => if (m.isDefined) ø else List(f("additionalProperties", false)) }
   lazy val enumValues: Parser[List[JField]] = jsonArray ^^
     { case a => List(f("enum", a)) }
   lazy val defaultValue: Parser[List[JField]] = "=" ~> jsonValue ^^
@@ -154,10 +156,10 @@ class OrderlyParser extends JavaTokenParsers {
     ("{" ~> jsonNum ~ "," ~ jsonNum <~ "}") ^^
       { case min ~ "," ~ max => List(f(l, min), f(h, max)) } |
     ("{" ~> jsonNum <~ "," <~ "}")  ^^
-      { case min => List(f(l, min)) } | 
+      { case min => List(f(l, min)) } |
     ("{" ~> "," ~> jsonNum <~ "}") ^^
       { case max => List(f(h, max)) } |
-    ("{" ~ "," ~ "}") ^^^ List()
+    ("{" ~ "," ~ "}") ^^^ ø
   lazy val propertyName: Parser[JString] =
     ident ^^ { case s => JString(s) } |
     jsonStr
