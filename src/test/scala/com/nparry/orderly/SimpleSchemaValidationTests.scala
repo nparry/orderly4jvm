@@ -134,6 +134,71 @@ class SimpleSchemaValidationTests extends Specification {
 
       o.validate(JObject(List[JField]())).size mustEqual 0
     }
+
+    "do simple comment validation for null" in {
+
+      val orderly = Orderly("null; #comment")
+      orderly.validate(JNull).size mustEqual 0
+    }
+
+    "do simple comment validation for boolean" in {
+      val orderly = Orderly("boolean; #comment")
+      orderly.validate(JBool(true)).size mustEqual 0
+    }
+
+    "do simple comment validation for integer" in {
+
+      val orderly = Orderly("integer; #comment")
+      orderly.validate(JInt(42)).size mustEqual 0
+    }
+
+    "do simple comment validation for string" in {
+      val orderly = Orderly("string; #comment")
+      orderly.validate(JString("foo")).size mustEqual 0
+    }
+
+    "do simple comment validation for number" in {
+      val orderly = Orderly("number; #comment")
+      orderly.validate(JInt(42)).size mustEqual 0
+      orderly.validate(JDouble(42.0)).size mustEqual 0
+    }
+
+
+    "do simple comment validation for object" in {
+      val orderly = Orderly("object { string foo; }; # comment")
+      orderly.validate(Json.parse("""{ "foo": "bar" }""")).size mustEqual 0
+    }
+
+    "do simple comment validation for array" in {
+      val orderly = Orderly("""array [ string ]; # comment""")
+      orderly.validate(Json.parse("""[ "foo", "bar" ]""")).size mustEqual 0
+    }
+
+    "do simple comment validation for object" in {
+      val orderly = Orderly("object {}; # comment")
+      orderly.validate(Json.parse("{}")).size mustEqual 0
+    }
+
+    "do multiple comments validation" in {
+
+      val o = Orderly("""
+      | # comment 1
+      | object { # in-line comment
+      | # comment 2
+      | # comment 3
+      | string foo; #comment 4
+      | string bar?; #comment 5
+      | \\ comment 6
+      | \\ comment 7
+      | integer baz?; ### comment8
+      | # comment 9
+      | }; # comment 10
+      | # comment 11
+      """.stripMargin)
+
+      o.validate(Json.parse("""{ "foo": "bar" }""")).size mustEqual 0
+      o.validate(Json.parse("""{ "foo": "bar", "baz": 1 }""")).size mustEqual 0
+    }
   }
 }
 

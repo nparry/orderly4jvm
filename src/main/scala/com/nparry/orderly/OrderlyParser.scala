@@ -98,6 +98,10 @@ class OrderlyParser extends JavaTokenParsers {
     case e:Exception => throw e
   }
 
+
+  // Allow comments
+  protected override val whiteSpace = """(\s+|#.*|\\\\.*)+""".r
+
   // The orderly grammar
 
   lazy val orderlySchema: Parser[JObject] = unnamedEntry <~ opt(";")
