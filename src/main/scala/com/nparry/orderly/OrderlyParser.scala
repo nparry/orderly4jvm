@@ -5,19 +5,19 @@
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
  *  met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in
  *     the documentation and/or other materials provided with the
  *     distribution.
- * 
+ *
  *  3. Neither the name of Nathan Parry nor the names of any
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  *  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -98,6 +98,10 @@ class OrderlyParser extends JavaTokenParsers {
     case e:Exception => throw e
   }
 
+
+  // Allow comments
+  protected override val whiteSpace = """(\s+|#.*|\\\\.*)+""".r
+
   // The orderly grammar
 
   lazy val orderlySchema: Parser[JObject] = unnamedEntry <~ opt(";")
@@ -113,15 +117,15 @@ class OrderlyParser extends JavaTokenParsers {
       (rep1sep(unnamedEntry, ";") <~ opt(";")) ^^ { case x => JArray(x) } |
       success(JArray(List()))
   lazy val namedEntry: Parser[JField] =
-    (definitionPrefix ~ propertyName ~ definitionSuffix) ^^ 
+    (definitionPrefix ~ propertyName ~ definitionSuffix) ^^
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) } |
-    (stringPrefix ~ propertyName ~ stringSuffix) ^^ 
+    (stringPrefix ~ propertyName ~ stringSuffix) ^^
       { case p ~ n ~ s => f(n.values, JObject(p ++ s)) }
   lazy val unnamedEntry: Parser[JObject] =
     (definitionPrefix ~ definitionSuffix) ^^ { case p ~ s => JObject(p ++ s) } |
     (stringPrefix ~ stringSuffix) ^^ { case p ~ s => JObject(p ++ s) }
   lazy val definitionPrefix: Parser[List[JField]] =
-    "boolean" ^^^ (List(t("boolean"))) | 
+    "boolean" ^^^ (List(t("boolean"))) |
     "null"    ^^^ (List(t("null"))) |
     "any"     ^^^ (List(t("any"))) |
     ("integer" ~> opt(range("minimum", "maximum"))) ^^ { r => t("integer") :: l(r) } |
@@ -154,7 +158,7 @@ class OrderlyParser extends JavaTokenParsers {
     ("{" ~> jsonNum ~ "," ~ jsonNum <~ "}") ^^
       { case min ~ "," ~ max => List(f(l, min), f(h, max)) } |
     ("{" ~> jsonNum <~ "," <~ "}")  ^^
-      { case min => List(f(l, min)) } | 
+      { case min => List(f(l, min)) } |
     ("{" ~> "," ~> jsonNum <~ "}") ^^
       { case max => List(f(h, max)) } |
     ("{" ~ "," ~ "}") ^^^ List()
