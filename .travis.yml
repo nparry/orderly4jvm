@@ -3,6 +3,7 @@ sudo: false
 scala:
 - 2.10.4
 - 2.11.2
+- 2.11.8
 env:
   global:
   - secure: JRUzWio2nli9lIn1COiABW/5HqOpEEG4lUYwt0QardhxNW8UC67SRPv/oQgXenKQJxsYQJDum74gS6MEoWuyVQ9nErXvaF3GG1O/n6BZ+Al5q68jlNBr+ZQmZjaWLoXOT6PrnC6vf5plqAghRxcimB0+diEtvCJ2q2Az0EbTdEQ=
