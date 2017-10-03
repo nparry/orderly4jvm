@@ -2,7 +2,7 @@ organization := "com.nparry"
 
 name := "orderly"
 
-version := "1.0.9-SNAPSHOT"
+version := "1.1.0-SNAPSHOT"
 
 description := "An implementation of Orderly JSON (http://orderly-json.org/) for use on the JVM"
 
@@ -24,11 +24,13 @@ pomExtra := (
 )
 
 libraryDependencies ++= Seq(
-  "net.liftweb" %% "lift-json" % "2.6-M4",
-  "org.specs2" %% "specs2" % "2.4" % "test"
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6",
+  "net.liftweb" %% "lift-json" % "3.1.0",
+  "org.specs2" %% "specs2-core" % "3.9.5" % "test"
 )
 
-crossScalaVersions := Seq("2.10.4", "2.11.2", "2.11.8")
+crossScalaVersions := Seq("2.12.2", "2.11.11")
+scalaVersion := crossScalaVersions.value.head
 
 publishMavenStyle := true
 

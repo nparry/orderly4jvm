@@ -42,7 +42,7 @@ object Json {
 
   def prettyPrint(f: File): String = prettyPrint(parse(f))
   def prettyPrint(s: String): String = prettyPrint(parse(s))
-  def prettyPrint(json: JValue): String = net.liftweb.json.Printer.pretty(render(json))
+  def prettyPrint(json: JValue): String = net.liftweb.json.JsonAST.prettyRender(json)
 
   def parse(f: File): JValue = parse(new FileReader(f))
   def parse(r: Reader): JValue = try { parse(readerToString(r)) } finally { r.close() }
