@@ -2,3 +2,4 @@ project/boot
 target
 *.swp
 .DS_Store
+.idea/
